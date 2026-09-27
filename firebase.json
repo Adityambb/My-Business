@@ -1,0 +1,17 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      "README.txt",
+      "script.local-backup.js",
+      "index.local-backup.html",
+      "style.local-backup.css",
+      "firebase-config.js"
+    ]
+  }
+}

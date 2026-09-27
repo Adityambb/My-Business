@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Billing & Ledger</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">₹</div>
+      <div>
+        <strong>LedgerPro</strong>
+        <span>Billing & Ledger</span>
+      </div>
+    </div>
+
+    <nav>
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="customers">Customers</button>
+      <button class="nav-btn" data-view="purchases">New Purchase</button>
+      <button class="nav-btn" data-view="payment">Receive Payment</button>
+      <button class="nav-btn" data-view="suppliers">Suppliers</button>
+      <button class="nav-btn" data-view="supplierPurchase">Buy Stock</button>
+      <button class="nav-btn" data-view="supplierPayment">Pay Supplier</button>
+      <button class="nav-btn" data-view="labours">Labour</button>
+      <button class="nav-btn" data-view="labourWork">Add Labour Work</button>
+      <button class="nav-btn" data-view="labourPayment">Pay Labour</button>
+    </nav>
+
+    <div class="sidebar-note">
+      <span id="sidebarStorageTitle">Cloud-ready</span>
+      <span id="sidebarStorageText">Sign in with Google to sync your data.</span>
+    </div>
+  </aside>
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open navigation">☰</button>
+      <div class="title-area">
+        <p class="eyebrow">CUSTOMER BILLING SYSTEM</p>
+        <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="cloud-account">
+        <span id="cloudStatus" class="cloud-status">Local only</span>
+        <span id="cloudUser" class="cloud-user"></span>
+        <button type="button" class="secondary auth-btn" id="cloudLoginBtn">Sign in with Google</button>
+        <button type="button" class="secondary auth-btn hidden" id="cloudLogoutBtn">Sign out</button>
+      </div>
+      <button type="button" class="primary" id="quickPurchase">+ New Purchase</button>
+    </header>
+
+    <section id="dashboard" class="view active">
+      <div class="data-tools">
+        <div>
+          <strong>Data Backup</strong>
+          <span>Export your browser data or restore a previous backup.</span>
+        </div>
+        <div class="data-tool-actions">
+          <button class="secondary" id="exportDataBtn">Export Backup</button>
+          <label class="secondary file-label">Import Backup<input id="importDataInput" type="file" accept="application/json" hidden></label>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <span>Total Customers</span>
+          <strong id="statCustomers">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Purchases</span>
+          <strong id="statPurchases">₹0.00</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Received</span>
+          <strong id="statReceived">₹0.00</strong>
+        </div>
+        <div class="stat-card danger-card">
+          <span>Total Outstanding</span>
+          <strong id="statOutstanding">₹0.00</strong>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Recent Transactions</h2>
+              <p>Latest purchases and payments</p>
+            </div>
+          </div>
+          <div id="recentTransactions" class="transaction-list empty">
+            No transactions yet.
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Outstanding Customers</h2>
+              <p>Customers with unpaid balances</p>
+            </div>
+          </div>
+          <div id="outstandingList" class="customer-list empty">
+            No outstanding balances.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="customers" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Customers</h2>
+          <p>Manage customers and view their complete ledger.</p>
+        </div>
+        <button type="button" class="primary" id="addCustomerBtn">+ Add Customer</button>
+      </div>
+      <div class="search-wrap">
+        <input id="customerSearch" type="search" placeholder="Search customer..." />
+      </div>
+      <div id="customerGrid" class="customer-grid"></div>
+    </section>
+
+    <section id="purchases" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>New Purchase</h2>
+          <p>Add a new product transaction to a customer's account.</p>
+        </div>
+      </div>
+      <form id="purchaseForm" class="form-card">
+        <label>Customer
+          <select id="purchaseCustomer" required></select>
+        </label>
+        <label>Date
+          <input id="purchaseDate" type="date" required />
+        </label>
+        <label>Product
+          <input id="purchaseProduct" type="text" placeholder="e.g. Product A" required />
+        </label>
+        <label>Quantity
+          <input id="purchaseQuantity" type="number" step="0.01" min="0" placeholder="0" required />
+        </label>
+        <label>Unit
+          <input id="purchaseUnit" type="text" placeholder="kg, piece, etc." value="kg" />
+        </label>
+        <label>Rate
+          <input id="purchaseRate" type="number" step="0.01" min="0" placeholder="0.00" required />
+        </label>
+        <div class="amount-preview">
+          <span>Amount</span>
+          <strong id="purchaseAmount">₹0.00</strong>
+        </div>
+        <button class="primary full" type="submit">Save Purchase</button>
+      </form>
+    </section>
+
+    <section id="payment" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Receive Payment</h2>
+          <p>Record a payment and reduce the customer's outstanding balance.</p>
+        </div>
+      </div>
+      <form id="paymentForm" class="form-card">
+        <label>Customer
+          <select id="paymentCustomer" required></select>
+        </label>
+        <label>Date
+          <input id="paymentDate" type="date" required />
+        </label>
+        <label>Amount
+          <input id="paymentAmount" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+        </label>
+        <label>Note
+          <input id="paymentNote" type="text" placeholder="Cash, UPI, bank transfer..." />
+        </label>
+        <button class="primary full" type="submit">Record Payment</button>
+      </form>
+    </section>
+
+
+    <section id="suppliers" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Suppliers</h2>
+          <p>Track stock purchases and the amount still payable to each seller.</p>
+        </div>
+        <button type="button" class="primary" id="addSupplierBtn">+ Add Supplier</button>
+      </div>
+      <div class="search-wrap">
+        <input id="supplierSearch" type="search" placeholder="Search supplier..." />
+      </div>
+      <div id="supplierGrid" class="customer-grid"></div>
+    </section>
+
+    <section id="supplierPurchase" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Buy Stock</h2>
+          <p>Record goods purchased from a supplier. Amount = quantity × rate.</p>
+        </div>
+      </div>
+      <form id="supplierPurchaseForm" class="form-card">
+        <label>Supplier
+          <select id="supplierPurchaseSupplier" required></select>
+        </label>
+        <label>Date
+          <input id="supplierPurchaseDate" type="date" required />
+        </label>
+        <label>Product
+          <input id="supplierPurchaseProduct" type="text" placeholder="e.g. Plastic Scrap" required />
+        </label>
+        <label>Quantity
+          <input id="supplierPurchaseQuantity" type="number" step="0.01" min="0" placeholder="0" required />
+        </label>
+        <label>Unit
+          <input id="supplierPurchaseUnit" type="text" value="kg" required />
+        </label>
+        <label>Rate per Unit
+          <input id="supplierPurchaseRate" type="number" step="0.01" min="0" placeholder="0.00" required />
+        </label>
+        <div class="amount-preview">
+          <span>Total Payable</span>
+          <strong id="supplierPurchaseAmount">₹0.00</strong>
+        </div>
+        <label>Amount Paid Now
+          <input id="supplierPurchasePaid" type="number" step="0.01" min="0" value="0" />
+        </label>
+        <button class="primary full" type="submit">Save Stock Purchase</button>
+      </form>
+    </section>
+
+    <section id="supplierPayment" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Pay Supplier</h2>
+          <p>Record a payment made to a seller and reduce the amount payable.</p>
+        </div>
+      </div>
+      <form id="supplierPaymentForm" class="form-card">
+        <label>Supplier
+          <select id="supplierPaymentSupplier" required></select>
+        </label>
+        <label>Date
+          <input id="supplierPaymentDate" type="date" required />
+        </label>
+        <label>Payment Amount
+          <input id="supplierPaymentAmount" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+        </label>
+        <label>Note
+          <input id="supplierPaymentNote" type="text" placeholder="Cash, UPI, bank transfer..." />
+        </label>
+        <button class="primary full" type="submit">Record Supplier Payment</button>
+      </form>
+    </section>
+
+
+    <section id="labours" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Labour</h2>
+          <p>Track daily wages, overtime, unloading charges, payments, and outstanding amounts.</p>
+        </div>
+        <button type="button" class="primary" id="addLabourBtn">+ Add Labour</button>
+      </div>
+      <div class="search-wrap">
+        <input id="labourSearch" type="search" placeholder="Search labour name..." />
+      </div>
+      <div id="labourGrid" class="customer-grid"></div>
+    </section>
+
+    <section id="labourWork" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Add Labour Work</h2>
+          <p>Daily wage + overtime + unloading/extra charge = total labour cost.</p>
+        </div>
+      </div>
+      <form id="labourWorkForm" class="form-card">
+        <label>Labour
+          <select id="labourWorkLabour" required></select>
+        </label>
+        <label>Date
+          <input id="labourWorkDate" type="date" required />
+        </label>
+        <label>Regular Work Hours
+          <input id="labourRegularHours" type="number" step="0.5" min="0" value="9" required />
+        </label>
+        <label>Daily Wage
+          <input id="labourDailyWage" type="number" step="0.01" min="0" value="500" required />
+        </label>
+        <label>Overtime Hours
+          <input id="labourOvertimeHours" type="number" step="0.5" min="0" value="0" required />
+        </label>
+        <label>Overtime Rate / Hour
+          <input id="labourOvertimeRate" type="number" step="0.01" min="0" value="50" required />
+        </label>
+        <label>Unloading / Extra Charge
+          <input id="labourUnloadCharge" type="number" step="0.01" min="0" value="0" required />
+        </label>
+        <label>Work Note
+          <input id="labourWorkNote" type="text" placeholder="e.g. Unloaded 5 ton wood" />
+        </label>
+        <div class="amount-preview labour-breakdown">
+          <div>
+            <span>Daily wage</span>
+            <strong id="labourDailyPreview">₹500.00</strong>
+          </div>
+          <div>
+            <span>Overtime</span>
+            <strong id="labourOvertimePreview">₹0.00</strong>
+          </div>
+          <div>
+            <span>Unloading</span>
+            <strong id="labourUnloadPreview">₹0.00</strong>
+          </div>
+          <div>
+            <span>Total labour cost</span>
+            <strong id="labourTotalPreview">₹500.00</strong>
+          </div>
+        </div>
+        <button class="primary full" type="submit">Save Labour Work</button>
+      </form>
+    </section>
+
+    <section id="labourPayment" class="view">
+      <div class="section-actions">
+        <div>
+          <h2>Pay Labour</h2>
+          <p>Make weekly or partial payments and reduce the labourer's outstanding amount.</p>
+        </div>
+      </div>
+      <form id="labourPaymentForm" class="form-card">
+        <label>Labour
+          <select id="labourPaymentLabour" required></select>
+        </label>
+        <label>Payment Date
+          <input id="labourPaymentDate" type="date" required />
+        </label>
+        <label>Payment Amount
+          <input id="labourPaymentAmount" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+        </label>
+        <label>Note
+          <input id="labourPaymentNote" type="text" placeholder="Weekly payment, cash, UPI..." />
+        </label>
+        <button class="primary full" type="submit">Record Labour Payment</button>
+      </form>
+    </section>
+
+    <section id="customerDetail" class="view">
+      <button class="back-btn" id="backCustomers">← Back to Customers</button>
+      <div id="detailContent"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Add Customer</h2>
+        <button id="closeModal" class="icon-btn">×</button>
+      </div>
+      <form id="customerForm">
+        <label>Customer Name
+          <input id="customerName" type="text" placeholder="e.g. Rajendra Shaw" required />
+        </label>
+        <label>Phone
+          <input id="customerPhone" type="tel" placeholder="Optional" />
+        </label>
+        <label>Address
+          <textarea id="customerAddress" rows="3" placeholder="Optional"></textarea>
+        </label>
+        <button class="primary full" type="submit">Create Customer</button>
+      </form>
+    </div>
+  </div>
+
+
+
+
+  <div id="labourModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Add Labour</h2>
+        <button id="closeLabourModal" class="icon-btn">×</button>
+      </div>
+      <form id="labourForm">
+        <label>Labour Name
+          <input id="labourName" type="text" placeholder="e.g. Raju" required />
+        </label>
+        <label>Phone
+          <input id="labourPhone" type="tel" placeholder="Optional" />
+        </label>
+        <label>Address / Note
+          <textarea id="labourAddress" rows="3" placeholder="Optional"></textarea>
+        </label>
+        <button class="primary full" type="submit">Create Labour Record</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editLabourWorkModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Edit Labour Work</h2>
+        <button id="closeEditLabourWorkModal" class="icon-btn">×</button>
+      </div>
+      <form id="editLabourWorkForm">
+        <input id="editLabourWorkId" type="hidden" />
+        <input id="editLabourWorkLabourId" type="hidden" />
+        <label>Date
+          <input id="editLabourWorkDate" type="date" required />
+        </label>
+        <label>Regular Work Hours
+          <input id="editLabourRegularHours" type="number" step="0.5" min="0" required />
+        </label>
+        <label>Daily Wage
+          <input id="editLabourDailyWage" type="number" step="0.01" min="0" required />
+        </label>
+        <label>Overtime Hours
+          <input id="editLabourOvertimeHours" type="number" step="0.5" min="0" required />
+        </label>
+        <label>Overtime Rate / Hour
+          <input id="editLabourOvertimeRate" type="number" step="0.01" min="0" required />
+        </label>
+        <label>Unloading / Extra Charge
+          <input id="editLabourUnloadCharge" type="number" step="0.01" min="0" required />
+        </label>
+        <label>Work Note
+          <input id="editLabourWorkNote" type="text" />
+        </label>
+        <div class="amount-preview labour-breakdown">
+          <div>
+            <span>Daily wage</span>
+            <strong id="editLabourDailyPreview">₹0.00</strong>
+          </div>
+          <div>
+            <span>Overtime</span>
+            <strong id="editLabourOvertimePreview">₹0.00</strong>
+          </div>
+          <div>
+            <span>Unloading</span>
+            <strong id="editLabourUnloadPreview">₹0.00</strong>
+          </div>
+          <div>
+            <span>Total</span>
+            <strong id="editLabourTotalPreview">₹0.00</strong>
+          </div>
+        </div>
+        <button class="primary full" type="submit">Save Work Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editLabourPaymentModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Edit Labour Payment</h2>
+        <button id="closeEditLabourPaymentModal" class="icon-btn">×</button>
+      </div>
+      <form id="editLabourPaymentForm">
+        <input id="editLabourPaymentId" type="hidden" />
+        <input id="editLabourPaymentLabourId" type="hidden" />
+        <label>Date
+          <input id="editLabourPaymentDate" type="date" required />
+        </label>
+        <label>Amount
+          <input id="editLabourPaymentAmount" type="number" step="0.01" min="0.01" required />
+        </label>
+        <label>Note
+          <input id="editLabourPaymentNote" type="text" />
+        </label>
+        <button class="primary full" type="submit">Save Payment Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="supplierModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Add Supplier</h2>
+        <button id="closeSupplierModal" class="icon-btn">×</button>
+      </div>
+      <form id="supplierForm">
+        <label>Seller / Supplier Name
+          <input id="supplierName" type="text" placeholder="e.g. Ramesh Traders" required />
+        </label>
+        <label>Phone
+          <input id="supplierPhone" type="tel" placeholder="Optional" />
+        </label>
+        <label>Address
+          <textarea id="supplierAddress" rows="3" placeholder="Optional"></textarea>
+        </label>
+        <button class="primary full" type="submit">Create Supplier</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editPaymentModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Edit Customer Payment</h2>
+        <button id="closeEditPaymentModal" class="icon-btn">×</button>
+      </div>
+      <form id="editPaymentForm">
+        <input id="editPaymentId" type="hidden" />
+        <input id="editPaymentCustomerId" type="hidden" />
+        <label>Date
+          <input id="editPaymentDate" type="date" required />
+        </label>
+        <label>Amount
+          <input id="editPaymentAmount" type="number" step="0.01" min="0.01" required />
+        </label>
+        <label>Note
+          <input id="editPaymentNote" type="text" placeholder="Cash, UPI, bank transfer..." />
+        </label>
+        <button class="primary full" type="submit">Save Payment Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editSupplierPurchaseModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Edit Stock Purchase</h2>
+        <button id="closeEditSupplierPurchaseModal" class="icon-btn">×</button>
+      </div>
+      <form id="editSupplierPurchaseForm">
+        <input id="editSupplierPurchaseId" type="hidden" />
+        <input id="editSupplierPurchaseSupplierId" type="hidden" />
+        <label>Date
+          <input id="editSupplierPurchaseDate" type="date" required />
+        </label>
+        <label>Product
+          <input id="editSupplierPurchaseProduct" type="text" required />
+        </label>
+        <label>Quantity
+          <input id="editSupplierPurchaseQuantity" type="number" step="0.01" min="0" required />
+        </label>
+        <label>Unit
+          <input id="editSupplierPurchaseUnit" type="text" required />
+        </label>
+        <label>Rate per Unit
+          <input id="editSupplierPurchaseRate" type="number" step="0.01" min="0" required />
+        </label>
+        <div class="amount-preview">
+          <span>New Total Payable</span>
+          <strong id="editSupplierPurchaseAmount">₹0.00</strong>
+        </div>
+        <button class="primary full" type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editPurchaseModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Edit Purchase</h2>
+        <button id="closeEditPurchaseModal" class="icon-btn">×</button>
+      </div>
+      <form id="editPurchaseForm">
+        <input id="editPurchaseId" type="hidden" />
+        <input id="editPurchaseCustomerId" type="hidden" />
+        <label>Date
+          <input id="editPurchaseDate" type="date" required />
+        </label>
+        <label>Product
+          <input id="editPurchaseProduct" type="text" required />
+        </label>
+        <label>Quantity
+          <input id="editPurchaseQuantity" type="number" step="0.01" min="0" required />
+        </label>
+        <label>Unit
+          <input id="editPurchaseUnit" type="text" required />
+        </label>
+        <label>Rate
+          <input id="editPurchaseRate" type="number" step="0.01" min="0" required />
+        </label>
+        <div class="amount-preview">
+          <span>New Amount</span>
+          <strong id="editPurchaseAmount">₹0.00</strong>
+        </div>
+        <button class="primary full" type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
