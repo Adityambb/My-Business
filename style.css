@@ -2549,3 +2549,147 @@ button.reset-quiet:active {
     font-size: 13px !important;
   }
 }
+
+
+/* Old-record cleanup controls */
+.cleanup-btn {
+  border: 1px solid #f0b9b9 !important;
+  color: #9f1d1d !important;
+  background: #fff7f7 !important;
+}
+
+.cleanup-btn:hover {
+  background: #ffecec !important;
+}
+
+.retention-modal {
+  width: min(520px, 100%);
+}
+
+.retention-warning {
+  margin: 4px 0 18px;
+  padding: 13px 14px;
+  border: 1px solid #efc1c1;
+  border-radius: 10px;
+  background: #fff7f7;
+}
+
+.retention-warning strong,
+.retention-warning span {
+  display: block;
+}
+
+.retention-warning strong {
+  color: #a51e1e;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.retention-warning span {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.retention-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.retention-preview > div {
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafbfe;
+}
+
+.retention-preview span,
+.retention-preview strong {
+  display: block;
+}
+
+.retention-preview span {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.retention-preview strong {
+  font-size: 17px;
+}
+
+.retention-total {
+  grid-column: 1 / -1;
+  background: #f5f7ff !important;
+  border-color: #d9e0f0 !important;
+}
+
+.retention-total strong {
+  color: var(--primary);
+  font-size: 22px;
+}
+
+.retention-note {
+  margin: 8px 0 16px !important;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.danger-solid {
+  background: #b42318;
+  color: white;
+  border: 0;
+  border-radius: 9px;
+  padding: 12px 15px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.danger-solid:hover {
+  background: #941d15;
+}
+
+@media (max-width: 900px) and (pointer: coarse) {
+  .data-tool-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 9px !important;
+  }
+
+  .data-tool-actions .cleanup-btn {
+    grid-column: 1 / -1;
+    width: min(100%, 320px);
+    justify-self: center;
+  }
+
+  .retention-preview {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) and (pointer: coarse) {
+  .data-tool-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .data-tool-actions .cleanup-btn {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .retention-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .retention-total {
+    grid-column: auto;
+  }
+
+  .retention-modal .danger-solid {
+    min-height: 50px;
+    font-size: 14px;
+  }
+}
