@@ -2507,3 +2507,45 @@ button.reset-quiet:active {
     font-size: 11px !important;
   }
 }
+
+
+.profile-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-actions button {
+  width: 100%;
+  min-width: 0;
+}
+
+.profile-modal {
+  max-width: 460px;
+}
+
+@media (max-width: 900px) and (pointer: coarse) {
+  .profile-actions {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .profile-actions button {
+    min-height: 44px !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 520px) and (pointer: coarse) {
+  .profile-actions {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .profile-actions button {
+    min-height: 46px !important;
+    font-size: 13px !important;
+  }
+}
