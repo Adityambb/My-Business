@@ -1,7 +1,6 @@
 import {
   isFirebaseConfigured,
   onUserChanged,
-  finishRedirectLogin,
   signInGoogle,
   signOutGoogle,
   loadCloudState,
@@ -1758,7 +1757,6 @@ async function initializeFirebaseConnection() {
     }
   });
 
-  await finishRedirectLogin();
 }
 
 
