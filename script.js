@@ -37,6 +37,22 @@ state.labours.forEach(l => {
 
 const $ = (id) => document.getElementById(id);
 
+// Initialize Firebase authentication and cloud synchronization early so that
+// a later UI error cannot prevent the Google Sign-In listener from being attached.
+initializeFirebaseConnection().catch((error) => {
+  console.error("Firebase initialization failed:", error);
+  const status = document.getElementById("cloudStatus");
+  if (status) {
+    status.textContent = "Firebase error";
+    status.className = "cloud-status error";
+  }
+  const toast = document.getElementById("toast");
+  if (toast) {
+    toast.textContent = error?.message || "Firebase initialization failed.";
+    toast.classList.add("show");
+  }
+});
+
 function money(value) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -1671,9 +1687,10 @@ async function initializeFirebaseConnection() {
       setCloudStatus("Signing in…");
       await signInGoogle();
     } catch (error) {
-      console.error(error);
+      console.error("Google sign-in error:", error);
       setCloudStatus("Sign-in failed", "error");
-      showToast("Google sign-in failed. Check Firebase setup.");
+      const code = error?.code ? ` [${error.code}]` : "";
+      showToast(`Google sign-in failed${code}: ${error?.message || "Unknown error"}`);
     }
   });
 
@@ -1705,12 +1722,16 @@ async function initializeFirebaseConnection() {
       $("cloudLoginBtn").disabled = false;
       $("cloudLoginBtn").textContent = "Sign in with Google";
       setCloudStatus("Local copy");
+      const help = $("cloudHelp");
+      if (help) help.textContent = "Sign in with Google to sync your data.";
       return;
     }
 
     $("cloudUser").textContent = user.email || user.displayName || "Signed in";
     $("cloudLoginBtn").classList.add("hidden");
     $("cloudLogoutBtn").classList.remove("hidden");
+    const help = $("cloudHelp");
+    if (help) help.textContent = "Google account connected. Loading your cloud ledger…";
 
     try {
       const cloudState = normalizeState(await loadCloudState(user.uid));
@@ -1822,9 +1843,3 @@ $("importDataInput").addEventListener("change", async (e) => {
 });
 
 
-// Initialize Firebase authentication and cloud synchronization.
-initializeFirebaseConnection().catch((error) => {
-  console.error("Firebase initialization failed:", error);
-  setCloudStatus("Firebase error", "error");
-  showToast(error?.message || "Firebase initialization failed.");
-});
