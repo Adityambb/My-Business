@@ -69,6 +69,7 @@
         <div class="data-tool-actions">
           <button class="secondary" id="exportDataBtn">Export Backup</button>
           <label class="secondary file-label">Import Backup<input id="importDataInput" type="file" accept="application/json" hidden></label>
+          <button class="secondary cleanup-btn" id="deleteOldRecordsBtn">Delete Old Records</button>
         </div>
       </div>
 
@@ -705,6 +706,61 @@
         <label>Address / Note<textarea id="editLabourAddress" rows="3"></textarea></label>
         <button class="primary full" type="submit">Save Labour Details</button>
       </form>
+    </div>
+  </div>
+
+  <div id="retentionModal" class="modal hidden">
+    <div class="modal-box retention-modal">
+      <div class="modal-head">
+        <div>
+          <h2>Delete Old Records</h2>
+          <p>Profiles stay safe. Only old customer, supplier and labour transactions are removed.</p>
+        </div>
+        <button id="closeRetentionModal" class="icon-btn">×</button>
+      </div>
+
+      <div class="retention-warning">
+        <strong>⚠ Permanent deletion</strong>
+        <span>Deleted records will be removed from this device and from the currently signed-in Firebase cloud ledger. This cannot be undone.</span>
+      </div>
+
+      <label>Delete records older than
+        <select id="retentionPeriod">
+          <option value="1">1 month</option>
+          <option value="2">2 months</option>
+          <option value="6">6 months</option>
+          <option value="12">1 year</option>
+        </select>
+      </label>
+
+      <div class="retention-preview">
+        <div>
+          <span>Cut-off date</span>
+          <strong id="retentionCutoff">-</strong>
+        </div>
+        <div>
+          <span>Customer records</span>
+          <strong id="retentionCustomerCount">0</strong>
+        </div>
+        <div>
+          <span>Supplier records</span>
+          <strong id="retentionSupplierCount">0</strong>
+        </div>
+        <div>
+          <span>Labour records</span>
+          <strong id="retentionLabourCount">0</strong>
+        </div>
+        <div class="retention-total">
+          <span>Total records to delete</span>
+          <strong id="retentionTotalCount">0</strong>
+        </div>
+      </div>
+
+      <p class="retention-note">
+        Customer, supplier and labour profiles will remain. Only dated purchase, payment and work records older than the selected period will be deleted.
+      </p>
+
+      <button class="danger-solid full" id="deleteOldRecordsConfirmBtn" type="button">Delete Selected Old Records</button>
     </div>
   </div>
 
