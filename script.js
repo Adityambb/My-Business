@@ -477,13 +477,24 @@ function renderLabours() {
   $("labourGrid").innerHTML = filtered.length
     ? filtered.map(l => {
       const t = labourTotals(l);
+      const payable = Math.max(t.payable, 0);
       return `
-        <article class="customer-card">
+        <article class="customer-card ledger-summary-card">
           <h3>${escapeHtml(l.name)}</h3>
           <div class="phone">${escapeHtml(l.phone || "No phone number")}</div>
-          <div class="supplier-balance">
-            <span>Amount Payable</span>
-            <strong>${money(Math.max(t.payable, 0))}</strong>
+          <div class="ledger-mini-grid">
+            <div>
+              <span>Total Labour Cost</span>
+              <strong>${money(t.work)}</strong>
+            </div>
+            <div>
+              <span>Total Paid</span>
+              <strong class="paid-value">${money(t.payments)}</strong>
+            </div>
+            <div>
+              <span>Outstanding</span>
+              <strong class="due-value">${money(payable)}</strong>
+            </div>
           </div>
           <div class="card-actions">
             <button class="secondary" onclick="openLabour('${l.id}')">View Account</button>
@@ -933,13 +944,24 @@ function renderSuppliers() {
   $("supplierGrid").innerHTML = filtered.length
     ? filtered.map(s => {
       const t = supplierTotals(s);
+      const payable = Math.max(t.payable, 0);
       return `
-        <article class="customer-card">
+        <article class="customer-card ledger-summary-card">
           <h3>${escapeHtml(s.name)}</h3>
           <div class="phone">${escapeHtml(s.phone || "No phone number")}</div>
-          <div class="supplier-balance">
-            <span>Amount Payable</span>
-            <strong>${money(Math.max(t.payable, 0))}</strong>
+          <div class="ledger-mini-grid">
+            <div>
+              <span>Total Purchased</span>
+              <strong>${money(t.purchases)}</strong>
+            </div>
+            <div>
+              <span>Total Paid</span>
+              <strong class="paid-value">${money(t.payments)}</strong>
+            </div>
+            <div>
+              <span>Outstanding</span>
+              <strong class="due-value">${money(payable)}</strong>
+            </div>
           </div>
           <div class="card-actions">
             <button class="secondary" onclick="openSupplier('${s.id}')">View Account</button>
@@ -1272,82 +1294,69 @@ $("paymentForm").addEventListener("submit", (e) => {
 $("customerSearch").addEventListener("input", renderCustomers);
 
 function renderDashboard() {
-  const totalCustomers = state.customers.length;
-  let purchases = 0;
-  let received = 0;
-  let outstanding = 0;
+  let customerSales = 0;
+  let customerReceived = 0;
+  let customerOutstanding = 0;
 
   state.customers.forEach(c => {
     const t = totals(c);
-    purchases += t.purchases;
-    received += t.payments;
-    outstanding += Math.max(t.balance, 0);
+    customerSales += t.purchases;
+    customerReceived += t.payments;
+    customerOutstanding += Math.max(t.balance, 0);
   });
 
-  $("statCustomers").textContent = totalCustomers;
-  $("statPurchases").textContent = money(purchases);
-  $("statReceived").textContent = money(received);
-  $("statOutstanding").textContent = money(outstanding);
+  let supplierPurchases = 0;
+  let supplierPaid = 0;
+  let supplierPayable = 0;
+  let suppliersWithBalance = 0;
 
-  const events = [];
-
-  state.customers.forEach(c => {
-    c.purchases.forEach(p => {
-      events.push({
-        date: p.date,
-        customer: c.name,
-        type: "Purchase",
-        description: p.product,
-        amount: p.amount
-      });
-    });
-
-    c.payments.forEach(p => {
-      events.push({
-        date: p.date,
-        customer: c.name,
-        type: "Payment",
-        description: p.note || "Payment received",
-        amount: p.amount
-      });
-    });
+  state.suppliers.forEach(s => {
+    const t = supplierTotals(s);
+    supplierPurchases += t.purchases;
+    supplierPaid += t.payments;
+    supplierPayable += Math.max(t.payable, 0);
+    if (t.payable > 0) suppliersWithBalance += 1;
   });
 
-  events.sort((a, b) => new Date(b.date) - new Date(a.date));
+  let labourCost = 0;
+  let labourPaid = 0;
+  let labourPayable = 0;
+  let labourWithBalance = 0;
 
-  const recent = events.slice(0, 8);
-  $("recentTransactions").classList.toggle("empty", recent.length === 0);
-  $("recentTransactions").innerHTML = recent.length
-    ? recent.map(e => `
-      <div class="transaction-item">
-        <div>
-          <strong>${escapeHtml(e.customer)}</strong><br>
-          <small>${escapeHtml(e.type)} · ${escapeHtml(e.description)} · ${formatDate(e.date)}</small>
-        </div>
-        <span class="amount ${e.type === "Payment" ? "negative" : "positive"}">
-          ${e.type === "Payment" ? "-" : "+"}${money(e.amount)}
-        </span>
-      </div>
-    `).join("")
-    : "No transactions yet.";
+  state.labours.forEach(l => {
+    const t = labourTotals(l);
+    labourCost += t.work;
+    labourPaid += t.payments;
+    labourPayable += Math.max(t.payable, 0);
+    if (t.payable > 0) labourWithBalance += 1;
+  });
 
-  const outstandingCustomers = state.customers
-    .map(c => ({ c, t: totals(c) }))
-    .filter(x => x.t.balance > 0)
-    .sort((a, b) => b.t.balance - a.t.balance);
+  $("statCustomers").textContent = state.customers.length;
+  $("statPurchases").textContent = money(customerSales);
+  $("statReceived").textContent = money(customerReceived);
+  $("statOutstanding").textContent = money(customerOutstanding);
 
-  $("outstandingList").classList.toggle("empty", outstandingCustomers.length === 0);
-  $("outstandingList").innerHTML = outstandingCustomers.length
-    ? outstandingCustomers.slice(0, 8).map(({c, t}) => `
-      <div class="outstanding-item">
-        <div>
-          <strong>${escapeHtml(c.name)}</strong><br>
-          <small>Outstanding</small>
-        </div>
-        <span class="amount positive">${money(t.balance)}</span>
-      </div>
-    `).join("")
-    : "No outstanding balances.";
+  $("statSuppliers").textContent = state.suppliers.length;
+  $("statSupplierPurchases").textContent = money(supplierPurchases);
+  $("statSupplierPaid").textContent = money(supplierPaid);
+  $("statSupplierPayable").textContent = money(supplierPayable);
+
+  $("statLabours").textContent = state.labours.length;
+  $("statLabourCost").textContent = money(labourCost);
+  $("statLabourPaid").textContent = money(labourPaid);
+  $("statLabourPayable").textContent = money(labourPayable);
+
+  $("overviewCustomerOutstanding").textContent = money(customerOutstanding);
+  $("overviewCustomerCount").textContent =
+    `${state.customers.filter(c => totals(c).balance > 0).length} customers outstanding`;
+
+  $("overviewSupplierPayable").textContent = money(supplierPayable);
+  $("overviewSupplierCount").textContent =
+    `${suppliersWithBalance} suppliers with balance`;
+
+  $("overviewLabourPayable").textContent = money(labourPayable);
+  $("overviewLabourCount").textContent =
+    `${labourWithBalance} labourers with balance`;
 }
 
 function renderCustomers() {
@@ -1785,6 +1794,49 @@ mobileOverlay.addEventListener("click", closeMobileMenu);
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", closeMobileMenu);
+});
+
+
+// Reset all business data from this browser and Firestore.
+$("resetDataBtn").addEventListener("click", async () => {
+  const firstWarning = confirm(
+    "WARNING: This will delete ALL customer, supplier, labour, purchase and payment records.\n\n" +
+    "Your data will also be reset in the Firebase cloud account currently signed in.\n\n" +
+    "This cannot be undone unless you have a backup.\n\nContinue?"
+  );
+
+  if (!firstWarning) return;
+
+  const typed = prompt('Type RESET to permanently clear all business data.');
+  if (typed !== "RESET") {
+    showToast("Reset cancelled. Your data was not changed.");
+    return;
+  }
+
+  state.customers = [];
+  state.suppliers = [];
+  state.labours = [];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  rerenderAll();
+
+  if (currentFirebaseUser && isFirebaseConfigured()) {
+    try {
+      setCloudStatus("Resetting…", "connected");
+      await saveCloudState(currentFirebaseUser.uid, state);
+      setCloudStatus("Cloud saved", "connected");
+      showToast("All business data has been reset to zero.");
+    } catch (error) {
+      console.error("Cloud reset failed:", error);
+      setCloudStatus("Cloud reset failed", "error");
+      showToast("Local data was reset, but cloud reset failed.");
+    }
+  } else {
+    showToast("All local business data has been reset to zero.");
+  }
+});
+
+document.querySelectorAll(".dashboard-link").forEach(btn => {
+  btn.addEventListener("click", () => setView(btn.dataset.view));
 });
 
 // Export/import a portable JSON backup of all current browser data.
