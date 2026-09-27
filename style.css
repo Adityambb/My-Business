@@ -2292,3 +2292,134 @@ input:focus, select:focus, textarea:focus {
     max-width: 48vw !important;
   }
 }
+
+
+/* Refined dashboard actions */
+.dashboard-head {
+  align-items: flex-start;
+}
+
+.dashboard-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 18px 2px 0;
+}
+
+.reset-quiet {
+  background: transparent;
+  color: #8b1e1e;
+  border: 1px solid #e1b9b9;
+  border-radius: 8px;
+  padding: 7px 11px;
+  min-height: 34px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reset-quiet:hover {
+  background: #fff7f7;
+  border-color: #d99d9d;
+}
+
+.data-tool-actions {
+  justify-content: center !important;
+  align-items: center;
+}
+
+.dashboard-link-grid {
+  align-items: stretch;
+}
+
+.dashboard-link {
+  text-align: center;
+}
+
+.dashboard-link strong,
+.dashboard-link span {
+  text-align: center;
+}
+
+.card-actions {
+  justify-content: center;
+}
+
+@media (max-width: 900px) and (pointer: coarse) {
+  .dashboard-head {
+    text-align: left;
+  }
+
+  .data-tool-actions {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap;
+  }
+
+  .data-tool-actions .secondary {
+    width: auto !important;
+    min-width: 145px;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .dashboard-link-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-link {
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card-actions {
+    justify-content: center !important;
+  }
+
+  .card-actions button {
+    max-width: 220px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .dashboard-footer-actions {
+    justify-content: flex-end !important;
+    margin-top: 20px !important;
+    padding: 0 2px 8px;
+  }
+
+  .reset-quiet {
+    min-height: 36px !important;
+    width: auto !important;
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+  }
+
+  .section-actions .primary,
+  .form-card > .primary {
+    text-align: center !important;
+  }
+}
+
+@media (max-width: 520px) and (pointer: coarse) {
+  .data-tool-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .data-tool-actions .secondary {
+    width: min(100%, 320px) !important;
+  }
+
+  .dashboard-footer-actions {
+    padding-right: 4px;
+  }
+
+  .reset-quiet {
+    font-size: 10px !important;
+  }
+}
