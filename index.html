@@ -669,6 +669,45 @@
     </div>
   </div>
 
+  <div id="editCustomerModal" class="modal hidden">
+    <div class="modal-box profile-modal">
+      <div class="modal-head"><h2>Edit Customer</h2><button id="closeEditCustomerModal" class="icon-btn">×</button></div>
+      <form id="editCustomerForm">
+        <input id="editCustomerId" type="hidden" />
+        <label>Customer Name<input id="editCustomerName" type="text" required /></label>
+        <label>Phone<input id="editCustomerPhone" type="tel" /></label>
+        <label>Address<textarea id="editCustomerAddress" rows="3"></textarea></label>
+        <button class="primary full" type="submit">Save Customer Details</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editSupplierModal" class="modal hidden">
+    <div class="modal-box profile-modal">
+      <div class="modal-head"><h2>Edit Supplier</h2><button id="closeEditSupplierModal" class="icon-btn">×</button></div>
+      <form id="editSupplierForm">
+        <input id="editSupplierId" type="hidden" />
+        <label>Seller / Supplier Name<input id="editSupplierName" type="text" required /></label>
+        <label>Phone<input id="editSupplierPhone" type="tel" /></label>
+        <label>Address<textarea id="editSupplierAddress" rows="3"></textarea></label>
+        <button class="primary full" type="submit">Save Supplier Details</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="editLabourModal" class="modal hidden">
+    <div class="modal-box profile-modal">
+      <div class="modal-head"><h2>Edit Labour</h2><button id="closeEditLabourModal" class="icon-btn">×</button></div>
+      <form id="editLabourForm">
+        <input id="editLabourId" type="hidden" />
+        <label>Labour Name<input id="editLabourName" type="text" required /></label>
+        <label>Phone<input id="editLabourPhone" type="tel" /></label>
+        <label>Address / Note<textarea id="editLabourAddress" rows="3"></textarea></label>
+        <button class="primary full" type="submit">Save Labour Details</button>
+      </form>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
   <script type="module" src="script.js"></script>
 </body>
