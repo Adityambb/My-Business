@@ -2,9 +2,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   onAuthStateChanged,
+  browserLocalPersistence,
+  setPersistence,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
@@ -32,6 +33,11 @@ if (configured) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+
+  // Keep the Firebase login persisted in this browser/device.
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("Firebase persistence setup failed:", error);
+  });
 }
 
 function ledgerRef(uid) {
@@ -47,16 +53,6 @@ export function onUserChanged(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-export async function finishRedirectLogin() {
-  if (!configured) return null;
-  try {
-    return await getRedirectResult(auth);
-  } catch (error) {
-    console.error("Firebase redirect sign-in error:", error);
-    throw error;
-  }
-}
-
 export async function signInGoogle() {
   if (!configured) {
     throw new Error("Firebase is not configured yet.");
@@ -65,8 +61,11 @@ export async function signInGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // Redirect works reliably on GitHub Pages and avoids popup blockers.
-  await signInWithRedirect(auth, provider);
+  // Popup is the reliable choice for a GitHub Pages-hosted app.
+  // It avoids the cross-origin storage issue that affects redirect flows on
+  // non-Firebase hosting domains.
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
 }
 
 export async function signOutGoogle() {
