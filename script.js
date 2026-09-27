@@ -37,21 +37,11 @@ state.labours.forEach(l => {
 
 const $ = (id) => document.getElementById(id);
 
-// Initialize Firebase authentication and cloud synchronization early so that
-// a later UI error cannot prevent the Google Sign-In listener from being attached.
-initializeFirebaseConnection().catch((error) => {
-  console.error("Firebase initialization failed:", error);
-  const status = document.getElementById("cloudStatus");
-  if (status) {
-    status.textContent = "Firebase error";
-    status.className = "cloud-status error";
-  }
-  const toast = document.getElementById("toast");
-  if (toast) {
-    toast.textContent = error?.message || "Firebase initialization failed.";
-    toast.classList.add("show");
-  }
-});
+let currentFirebaseUser = null;
+let cloudSyncTimer = null;
+let cloudSyncInProgress = false;
+let suppressCloudSync = false;
+
 
 function money(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -69,10 +59,6 @@ function today() {
   return `${year}-${month}-${day}`;
 }
 
-let currentFirebaseUser = null;
-let cloudSyncTimer = null;
-let cloudSyncInProgress = false;
-let suppressCloudSync = false;
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1842,4 +1828,10 @@ $("importDataInput").addEventListener("change", async (e) => {
   }
 });
 
-
+// Initialize Firebase authentication and cloud synchronization.
+initializeFirebaseConnection().catch((error) => {
+  console.error("Firebase initialization failed:", error);
+  const status = $("cloudStatus");
+  if (status) setCloudStatus("Firebase error", "error");
+  showToast(error?.message || "Firebase initialization failed.");
+});
