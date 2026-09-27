@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged,
@@ -40,7 +39,7 @@ function ledgerRef(uid) {
 }
 
 export function isFirebaseConfigured() {
-  return configured;
+  return Boolean(configured);
 }
 
 export function onUserChanged(callback) {
@@ -54,7 +53,7 @@ export async function finishRedirectLogin() {
     return await getRedirectResult(auth);
   } catch (error) {
     console.error("Firebase redirect sign-in error:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -64,17 +63,10 @@ export async function signInGoogle() {
   }
 
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
 
-  // Redirect is more reliable on phones; popup is convenient on desktop.
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    await signInWithRedirect(auth, provider);
-    return null;
-  }
-
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  // Redirect works reliably on GitHub Pages and avoids popup blockers.
+  await signInWithRedirect(auth, provider);
 }
 
 export async function signOutGoogle() {
@@ -95,9 +87,6 @@ export async function loadCloudState(uid) {
 export async function saveCloudState(uid, state) {
   if (!configured) return;
 
-  // Store a complete application snapshot in one document for this prototype.
-  // This keeps the existing application logic simple while moving persistence
-  // to the user's cloud account.
   await setDoc(
     ledgerRef(uid),
     {
