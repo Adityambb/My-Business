@@ -1822,3 +1822,11 @@ $("importDataInput").addEventListener("change", async (e) => {
     e.target.value = "";
   }
 });
+
+
+// Initialize Firebase authentication and cloud synchronization.
+initializeFirebaseConnection().catch((error) => {
+  console.error("Firebase initialization failed:", error);
+  setCloudStatus("Firebase error", "error");
+  showToast(error?.message || "Firebase initialization failed.");
+});
