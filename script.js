@@ -1950,6 +1950,166 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 });
 
 
+
+// Delete old transaction history while keeping customer/supplier/labour profiles.
+function getRetentionCutoff(months) {
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setMonth(cutoff.getMonth() - Number(months));
+  return cutoff;
+}
+
+function isOlderThanCutoff(dateValue, cutoff) {
+  if (!dateValue) return false;
+  const d = new Date(dateValue + "T00:00:00");
+  return Number.isFinite(d.getTime()) && d < cutoff;
+}
+
+function getOldRecordCounts(months) {
+  const cutoff = getRetentionCutoff(months);
+
+  let customer = 0;
+  let supplier = 0;
+  let labour = 0;
+
+  state.customers.forEach(c => {
+    customer += c.purchases.filter(p => isOlderThanCutoff(p.date, cutoff)).length;
+    customer += c.payments.filter(p => isOlderThanCutoff(p.date, cutoff)).length;
+  });
+
+  state.suppliers.forEach(s => {
+    supplier += s.purchases.filter(p => isOlderThanCutoff(p.date, cutoff)).length;
+    supplier += s.payments.filter(p => isOlderThanCutoff(p.date, cutoff)).length;
+  });
+
+  state.labours.forEach(l => {
+    labour += l.work.filter(w => isOlderThanCutoff(w.date, cutoff)).length;
+    labour += l.payments.filter(p => isOlderThanCutoff(p.date, cutoff)).length;
+  });
+
+  return {
+    cutoff,
+    customer,
+    supplier,
+    labour,
+    total: customer + supplier + labour
+  };
+}
+
+function renderRetentionPreview() {
+  const months = Number($("retentionPeriod").value) || 1;
+  const counts = getOldRecordCounts(months);
+
+  $("retentionCutoff").textContent = counts.cutoff.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+  $("retentionCustomerCount").textContent = counts.customer;
+  $("retentionSupplierCount").textContent = counts.supplier;
+  $("retentionLabourCount").textContent = counts.labour;
+  $("retentionTotalCount").textContent = counts.total;
+}
+
+function deleteOldRecordsFromState(months) {
+  const cutoff = getRetentionCutoff(months);
+  let deleted = 0;
+
+  state.customers.forEach(c => {
+    const oldPurchases = c.purchases.filter(p => isOlderThanCutoff(p.date, cutoff));
+    const oldPayments = c.payments.filter(p => isOlderThanCutoff(p.date, cutoff));
+    deleted += oldPurchases.length + oldPayments.length;
+    c.purchases = c.purchases.filter(p => !isOlderThanCutoff(p.date, cutoff));
+    c.payments = c.payments.filter(p => !isOlderThanCutoff(p.date, cutoff));
+  });
+
+  state.suppliers.forEach(s => {
+    const oldPurchases = s.purchases.filter(p => isOlderThanCutoff(p.date, cutoff));
+    const oldPayments = s.payments.filter(p => isOlderThanCutoff(p.date, cutoff));
+    deleted += oldPurchases.length + oldPayments.length;
+    s.purchases = s.purchases.filter(p => !isOlderThanCutoff(p.date, cutoff));
+    s.payments = s.payments.filter(p => !isOlderThanCutoff(p.date, cutoff));
+  });
+
+  state.labours.forEach(l => {
+    const oldWork = l.work.filter(w => isOlderThanCutoff(w.date, cutoff));
+    const oldPayments = l.payments.filter(p => isOlderThanCutoff(p.date, cutoff));
+    deleted += oldWork.length + oldPayments.length;
+    l.work = l.work.filter(w => !isOlderThanCutoff(w.date, cutoff));
+    l.payments = l.payments.filter(p => !isOlderThanCutoff(p.date, cutoff));
+  });
+
+  return { cutoff, deleted };
+}
+
+$("deleteOldRecordsBtn").addEventListener("click", () => {
+  $("retentionModal").classList.remove("hidden");
+  renderRetentionPreview();
+});
+
+$("closeRetentionModal").addEventListener("click", () => {
+  $("retentionModal").classList.add("hidden");
+});
+
+$("retentionModal").addEventListener("click", (e) => {
+  if (e.target === $("retentionModal")) {
+    $("retentionModal").classList.add("hidden");
+  }
+});
+
+$("retentionPeriod").addEventListener("change", renderRetentionPreview);
+
+$("deleteOldRecordsConfirmBtn").addEventListener("click", async () => {
+  const months = Number($("retentionPeriod").value) || 1;
+  const preview = getOldRecordCounts(months);
+
+  if (preview.total === 0) {
+    showToast("There are no records older than the selected period.");
+    return;
+  }
+
+  const warning = confirm(
+    `You are about to permanently delete ${preview.total} old transaction record(s).\n\n` +
+    `Cut-off date: ${preview.cutoff.toLocaleDateString("en-IN")}\n\n` +
+    `This affects customer, supplier and labour transaction history.\n` +
+    `Profiles themselves will NOT be deleted.\n\nContinue?`
+  );
+
+  if (!warning) return;
+
+  const typed = prompt('Type DELETE to permanently remove these old records.');
+  if (typed !== "DELETE") {
+    showToast("Old-record deletion cancelled.");
+    return;
+  }
+
+  clearTimeout(cloudSyncTimer);
+  const previousSuppress = suppressCloudSync;
+  suppressCloudSync = true;
+
+  try {
+    const result = deleteOldRecordsFromState(months);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    rerenderAll();
+    $("retentionModal").classList.add("hidden");
+
+    if (currentFirebaseUser && isFirebaseConfigured()) {
+      setCloudStatus("Deleting old records…", "connected");
+      await saveCloudState(currentFirebaseUser.uid, state);
+      setCloudStatus("Cloud saved", "connected");
+      showToast(`${result.deleted} old record(s) deleted from device and cloud.`);
+    } else {
+      showToast(`${result.deleted} old record(s) deleted from this device.`);
+    }
+  } catch (error) {
+    console.error("Old-record deletion failed:", error);
+    setCloudStatus("Cloud deletion failed", "error");
+    showToast("Old records were changed locally, but cloud deletion failed.");
+  } finally {
+    suppressCloudSync = previousSuppress;
+  }
+});
+
 // Reset all business data from this browser and Firestore.
 $("resetDataBtn").addEventListener("click", async () => {
   const firstWarning = confirm(
