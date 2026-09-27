@@ -496,9 +496,10 @@ function renderLabours() {
               <strong class="due-value">${money(payable)}</strong>
             </div>
           </div>
-          <div class="card-actions">
+          <div class="card-actions profile-actions">
             <button class="secondary" onclick="openLabour('${l.id}')">View Account</button>
-            <button class="secondary" onclick="quickLabourPayment('${l.id}')">Pay</button>
+            <button class="secondary" onclick="editLabour('${l.id}')">Edit</button>
+            <button class="danger-btn" onclick="deleteLabour('${l.id}')">Delete</button>
           </div>
         </article>
       `;
@@ -963,9 +964,10 @@ function renderSuppliers() {
               <strong class="due-value">${money(payable)}</strong>
             </div>
           </div>
-          <div class="card-actions">
+          <div class="card-actions profile-actions">
             <button class="secondary" onclick="openSupplier('${s.id}')">View Account</button>
-            <button class="secondary" onclick="quickSupplierPayment('${s.id}')">Pay</button>
+            <button class="secondary" onclick="editSupplier('${s.id}')">Edit</button>
+            <button class="danger-btn" onclick="deleteSupplier('${s.id}')">Delete</button>
           </div>
         </article>
       `;
@@ -1378,9 +1380,10 @@ function renderCustomers() {
             <span>Outstanding Balance</span>
             <strong>${money(Math.max(t.balance, 0))}</strong>
           </div>
-          <div class="card-actions">
+          <div class="card-actions profile-actions">
             <button class="secondary" onclick="openCustomer('${c.id}')">View Account</button>
-            <button class="secondary" onclick="quickPayment('${c.id}')">Payment</button>
+            <button class="secondary" onclick="editCustomer('${c.id}')">Edit</button>
+            <button class="danger-btn" onclick="deleteCustomer('${c.id}')">Delete</button>
           </div>
         </article>
       `;
@@ -1775,6 +1778,156 @@ async function initializeFirebaseConnection() {
 
 }
 
+
+
+function closeProfileModal(id) {
+  const el = $(id);
+  if (el) el.classList.add("hidden");
+}
+
+window.editCustomer = function(id) {
+  const customer = customerById(id);
+  if (!customer) return;
+  $("editCustomerId").value = customer.id;
+  $("editCustomerName").value = customer.name || "";
+  $("editCustomerPhone").value = customer.phone || "";
+  $("editCustomerAddress").value = customer.address || "";
+  $("editCustomerModal").classList.remove("hidden");
+};
+
+window.deleteCustomer = function(id) {
+  const customer = customerById(id);
+  if (!customer) return;
+  if (!confirm(
+    "Delete customer \"" + customer.name + "\" and all of their purchase/payment history?\n\nThis cannot be undone."
+  )) return;
+  state.customers = state.customers.filter(c => c.id !== id);
+  save();
+  populateCustomerSelects();
+  renderDashboard();
+  renderCustomers();
+  showToast("Customer and its history deleted.");
+};
+
+$("closeEditCustomerModal").addEventListener("click", () => closeProfileModal("editCustomerModal"));
+$("editCustomerModal").addEventListener("click", (e) => {
+  if (e.target === $("editCustomerModal")) closeProfileModal("editCustomerModal");
+});
+$("editCustomerForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const customer = customerById($("editCustomerId").value);
+  if (!customer) return;
+  const name = $("editCustomerName").value.trim();
+  if (!name) return showToast("Customer name is required.");
+  if (state.customers.some(c => c.id !== customer.id && c.name.toLowerCase() === name.toLowerCase())) {
+    return showToast("Another customer already has this name.");
+  }
+  customer.name = name;
+  customer.phone = $("editCustomerPhone").value.trim();
+  customer.address = $("editCustomerAddress").value.trim();
+  save();
+  closeProfileModal("editCustomerModal");
+  populateCustomerSelects();
+  renderDashboard();
+  renderCustomers();
+  showToast("Customer details updated.");
+});
+
+window.editSupplier = function(id) {
+  const supplier = supplierById(id);
+  if (!supplier) return;
+  $("editSupplierId").value = supplier.id;
+  $("editSupplierName").value = supplier.name || "";
+  $("editSupplierPhone").value = supplier.phone || "";
+  $("editSupplierAddress").value = supplier.address || "";
+  $("editSupplierModal").classList.remove("hidden");
+};
+
+window.deleteSupplier = function(id) {
+  const supplier = supplierById(id);
+  if (!supplier) return;
+  if (!confirm(
+    "Delete supplier \"" + supplier.name + "\" and all stock purchase/payment history?\n\nThis cannot be undone."
+  )) return;
+  state.suppliers = state.suppliers.filter(s => s.id !== id);
+  save();
+  populateSupplierSelects();
+  renderDashboard();
+  renderSuppliers();
+  showToast("Supplier and its history deleted.");
+};
+
+$("closeEditSupplierModal").addEventListener("click", () => closeProfileModal("editSupplierModal"));
+$("editSupplierModal").addEventListener("click", (e) => {
+  if (e.target === $("editSupplierModal")) closeProfileModal("editSupplierModal");
+});
+$("editSupplierForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const supplier = supplierById($("editSupplierId").value);
+  if (!supplier) return;
+  const name = $("editSupplierName").value.trim();
+  if (!name) return showToast("Supplier name is required.");
+  if (state.suppliers.some(s => s.id !== supplier.id && s.name.toLowerCase() === name.toLowerCase())) {
+    return showToast("Another supplier already has this name.");
+  }
+  supplier.name = name;
+  supplier.phone = $("editSupplierPhone").value.trim();
+  supplier.address = $("editSupplierAddress").value.trim();
+  save();
+  closeProfileModal("editSupplierModal");
+  populateSupplierSelects();
+  renderDashboard();
+  renderSuppliers();
+  showToast("Supplier details updated.");
+});
+
+window.editLabour = function(id) {
+  const labour = labourById(id);
+  if (!labour) return;
+  $("editLabourId").value = labour.id;
+  $("editLabourName").value = labour.name || "";
+  $("editLabourPhone").value = labour.phone || "";
+  $("editLabourAddress").value = labour.address || "";
+  $("editLabourModal").classList.remove("hidden");
+};
+
+window.deleteLabour = function(id) {
+  const labour = labourById(id);
+  if (!labour) return;
+  if (!confirm(
+    "Delete labourer \"" + labour.name + "\" and all work/payment history?\n\nThis cannot be undone."
+  )) return;
+  state.labours = state.labours.filter(l => l.id !== id);
+  save();
+  populateLabourSelects();
+  renderDashboard();
+  renderLabours();
+  showToast("Labourer and its history deleted.");
+};
+
+$("closeEditLabourModal").addEventListener("click", () => closeProfileModal("editLabourModal"));
+$("editLabourModal").addEventListener("click", (e) => {
+  if (e.target === $("editLabourModal")) closeProfileModal("editLabourModal");
+});
+$("editLabourForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const labour = labourById($("editLabourId").value);
+  if (!labour) return;
+  const name = $("editLabourName").value.trim();
+  if (!name) return showToast("Labour name is required.");
+  if (state.labours.some(l => l.id !== labour.id && l.name.toLowerCase() === name.toLowerCase())) {
+    return showToast("Another labourer already has this name.");
+  }
+  labour.name = name;
+  labour.phone = $("editLabourPhone").value.trim();
+  labour.address = $("editLabourAddress").value.trim();
+  save();
+  closeProfileModal("editLabourModal");
+  populateLabourSelects();
+  renderDashboard();
+  renderLabours();
+  showToast("Labour details updated.");
+});
 
 // Mobile navigation
 const mobileMenuBtn = $("mobileMenuBtn");
