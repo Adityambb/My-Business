@@ -53,6 +53,15 @@
     </header>
 
     <section id="dashboard" class="view active">
+      <div class="dashboard-head">
+        <div>
+          <p class="eyebrow">BUSINESS OVERVIEW</p>
+          <h2>Today at a glance</h2>
+          <p>Customers who owe you, suppliers you owe, and labour costs due.</p>
+        </div>
+        <button type="button" class="danger-outline" id="resetDataBtn">Reset All Data</button>
+      </div>
+
       <div class="data-tools">
         <div>
           <strong>Data Backup</strong>
@@ -64,48 +73,117 @@
         </div>
       </div>
 
-      <div class="stats">
+      <div class="stats dashboard-stats">
         <div class="stat-card">
           <span>Total Customers</span>
           <strong id="statCustomers">0</strong>
         </div>
         <div class="stat-card">
-          <span>Total Purchases</span>
+          <span>Customer Sales</span>
           <strong id="statPurchases">₹0.00</strong>
         </div>
         <div class="stat-card">
-          <span>Total Received</span>
+          <span>Customer Received</span>
           <strong id="statReceived">₹0.00</strong>
         </div>
         <div class="stat-card danger-card">
-          <span>Total Outstanding</span>
+          <span>Customer Outstanding</span>
           <strong id="statOutstanding">₹0.00</strong>
+        </div>
+
+        <div class="stat-card">
+          <span>Suppliers</span>
+          <strong id="statSuppliers">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Stock Purchased</span>
+          <strong id="statSupplierPurchases">₹0.00</strong>
+        </div>
+        <div class="stat-card">
+          <span>Paid to Suppliers</span>
+          <strong id="statSupplierPaid">₹0.00</strong>
+        </div>
+        <div class="stat-card danger-card">
+          <span>Supplier Payable</span>
+          <strong id="statSupplierPayable">₹0.00</strong>
+        </div>
+
+        <div class="stat-card">
+          <span>Labourers</span>
+          <strong id="statLabours">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Labour Cost</span>
+          <strong id="statLabourCost">₹0.00</strong>
+        </div>
+        <div class="stat-card">
+          <span>Paid to Labour</span>
+          <strong id="statLabourPaid">₹0.00</strong>
+        </div>
+        <div class="stat-card danger-card">
+          <span>Labour Payable</span>
+          <strong id="statLabourPayable">₹0.00</strong>
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="panel">
-          <div class="panel-head">
+      <div class="overview-grid">
+        <div class="overview-card customer-overview">
+          <div class="overview-title">
             <div>
-              <h2>Recent Transactions</h2>
-              <p>Latest purchases and payments</p>
+              <h2>Customer Receivables</h2>
+              <p>Money still to be collected.</p>
             </div>
+            <span class="overview-icon">₹</span>
           </div>
-          <div id="recentTransactions" class="transaction-list empty">
-            No transactions yet.
-          </div>
+          <strong id="overviewCustomerOutstanding">₹0.00</strong>
+          <span id="overviewCustomerCount">0 customers outstanding</span>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">
+        <div class="overview-card supplier-overview">
+          <div class="overview-title">
             <div>
-              <h2>Outstanding Customers</h2>
-              <p>Customers with unpaid balances</p>
+              <h2>Supplier Payables</h2>
+              <p>Money still to be paid to sellers.</p>
             </div>
+            <span class="overview-icon">₹</span>
           </div>
-          <div id="outstandingList" class="customer-list empty">
-            No outstanding balances.
+          <strong id="overviewSupplierPayable">₹0.00</strong>
+          <span id="overviewSupplierCount">0 suppliers with balance</span>
+        </div>
+
+        <div class="overview-card labour-overview">
+          <div class="overview-title">
+            <div>
+              <h2>Labour Payables</h2>
+              <p>Money still due to labourers.</p>
+            </div>
+            <span class="overview-icon">₹</span>
           </div>
+          <strong id="overviewLabourPayable">₹0.00</strong>
+          <span id="overviewLabourCount">0 labourers with balance</span>
+        </div>
+      </div>
+
+      <div class="dashboard-links panel">
+        <div class="panel-head">
+          <div>
+            <h2>Detailed History</h2>
+            <p>Transaction history is kept inside each account section.</p>
+          </div>
+        </div>
+        <div class="dashboard-link-grid">
+          <button class="dashboard-link" data-view="customers">
+            <strong>Customers</strong>
+            <span>Purchases, payments & outstanding</span>
+          </button>
+          <button class="dashboard-link" data-view="suppliers">
+            <strong>Suppliers</strong>
+            <span>Stock purchases, payments & payable</span>
+          </button>
+          <button class="dashboard-link" data-view="labours">
+            <strong>Labour</strong>
+            <span>Daily work, payments & outstanding</span>
+          </button>
         </div>
       </div>
     </section>
