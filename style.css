@@ -1765,3 +1765,530 @@ input:focus, select:focus, textarea:focus {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* =========================================================
+   PHONE / TOUCH DEVICE OVERRIDE
+   GitHub Pages mobile browsers can report a wider CSS viewport.
+   This rule uses a broader breakpoint plus coarse pointer so the
+   phone layout is actually activated without changing normal laptops.
+   ========================================================= */
+@media (max-width: 1100px) and (pointer: coarse) {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 300px !important;
+    min-height: 100vh !important;
+    padding: 20px 14px !important;
+    z-index: 2000 !important;
+    transform: translateX(-105%) !important;
+    transition: transform .24s ease !important;
+    overflow-y: auto !important;
+    box-shadow: 14px 0 32px rgba(15, 23, 42, .22) !important;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .brand {
+    padding: 4px 8px 22px !important;
+  }
+
+  .brand strong {
+    font-size: 19px !important;
+  }
+
+  .brand span {
+    font-size: 12px !important;
+  }
+
+  nav {
+    gap: 7px !important;
+  }
+
+  .nav-btn {
+    min-height: 50px !important;
+    padding: 14px 15px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+  }
+
+  .sidebar-note {
+    margin-top: 24px !important;
+    font-size: 12px !important;
+    padding: 14px !important;
+  }
+
+  .mobile-overlay {
+    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1900 !important;
+    background: rgba(15, 23, 42, .52) !important;
+  }
+
+  .mobile-overlay.show {
+    display: block !important;
+  }
+
+  .main {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 12px 14px 50px !important;
+  }
+
+  .topbar {
+    display: grid !important;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1500 !important;
+    padding: 6px 0 12px !important;
+    background: var(--bg) !important;
+  }
+
+  .mobile-menu-btn {
+    display: grid !important;
+    width: 52px !important;
+    height: 52px !important;
+    place-items: center !important;
+    border: 0 !important;
+    border-radius: 13px !important;
+    background: var(--sidebar) !important;
+    color: white !important;
+    font-size: 25px !important;
+    cursor: pointer !important;
+  }
+
+  .title-area {
+    min-width: 0 !important;
+    align-self: center;
+  }
+
+  .eyebrow {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+  }
+
+  h1 {
+    font-size: 28px !important;
+    line-height: 1.1 !important;
+  }
+
+  .topbar > .primary {
+    grid-column: 2 !important;
+    width: 100% !important;
+    min-height: 50px !important;
+    padding: 12px 15px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  .cloud-account {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    padding: 2px 2px 1px !important;
+  }
+
+  .cloud-status {
+    min-height: 38px !important;
+    padding: 8px 11px !important;
+    font-size: 11px !important;
+  }
+
+  .cloud-user {
+    max-width: 42vw !important;
+    font-size: 11px !important;
+  }
+
+  .auth-btn {
+    min-height: 40px !important;
+    padding: 9px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .dashboard-head {
+    margin: 16px 0 14px !important;
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-head h2,
+  .section-actions h2 {
+    font-size: 22px !important;
+  }
+
+  .dashboard-head p,
+  .section-actions p {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  .danger-outline {
+    width: 100% !important;
+    min-height: 50px !important;
+    font-size: 14px !important;
+  }
+
+  .data-tools {
+    margin-top: 12px !important;
+    padding: 16px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    border-radius: 13px !important;
+  }
+
+  .data-tools strong {
+    font-size: 14px !important;
+  }
+
+  .data-tools span {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  .data-tool-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 9px !important;
+  }
+
+  .data-tool-actions .secondary {
+    min-height: 48px !important;
+    font-size: 13px !important;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 11px !important;
+    margin: 15px 0 !important;
+  }
+
+  .stat-card {
+    min-height: 102px !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .stat-card span {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .stat-card strong {
+    font-size: 20px !important;
+    line-height: 1.2 !important;
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 11px !important;
+  }
+
+  .overview-card {
+    padding: 17px !important;
+    border-radius: 12px !important;
+  }
+
+  .overview-title h2 {
+    font-size: 19px !important;
+  }
+
+  .overview-card > strong {
+    font-size: 27px !important;
+  }
+
+  .dashboard-link-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-link {
+    min-height: 78px !important;
+    padding: 16px !important;
+  }
+
+  .section-actions {
+    margin: 20px 0 15px !important;
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .section-actions .primary {
+    width: 100% !important;
+    min-height: 50px !important;
+    font-size: 14px !important;
+  }
+
+  .search-wrap {
+    margin-bottom: 14px !important;
+  }
+
+  .search-wrap input {
+    max-width: none !important;
+    min-height: 52px !important;
+    font-size: 16px !important;
+  }
+
+  .customer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .customer-card {
+    padding: 18px !important;
+    border-radius: 13px !important;
+  }
+
+  .customer-card h3 {
+    font-size: 19px !important;
+  }
+
+  .customer-card .phone {
+    font-size: 12px !important;
+  }
+
+  .balance,
+  .supplier-balance {
+    margin: 16px 0 !important;
+    padding-top: 14px !important;
+  }
+
+  .balance strong,
+  .supplier-balance strong {
+    font-size: 24px !important;
+  }
+
+  .ledger-mini-grid {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    margin: 16px 0 !important;
+  }
+
+  .ledger-mini-grid span {
+    font-size: 9px !important;
+  }
+
+  .ledger-mini-grid strong {
+    font-size: 13px !important;
+  }
+
+  .card-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .card-actions button,
+  .secondary,
+  .danger-btn {
+    min-height: 46px !important;
+    font-size: 13px !important;
+  }
+
+  .form-card {
+    width: 100% !important;
+    max-width: none !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 19px !important;
+    margin-top: 17px !important;
+    border-radius: 13px !important;
+  }
+
+  .form-card label,
+  #customerForm label,
+  #supplierForm label,
+  #editPaymentForm label {
+    font-size: 13px !important;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100% !important;
+    min-height: 52px !important;
+    padding: 13px 14px !important;
+    margin-top: 8px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+  }
+
+  textarea {
+    min-height: 105px !important;
+  }
+
+  .form-card .full,
+  .form-card .amount-preview,
+  #editPurchaseForm .amount-preview,
+  #editPurchaseForm .full,
+  #editLabourWorkForm .amount-preview,
+  #editLabourWorkForm .full {
+    grid-column: auto !important;
+  }
+
+  .form-card > .primary {
+    min-height: 52px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+  }
+
+  .amount-preview {
+    padding: 16px !important;
+    min-height: 62px !important;
+    border-radius: 11px !important;
+  }
+
+  .amount-preview strong {
+    font-size: 24px !important;
+  }
+
+  .labour-breakdown {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .panel {
+    padding: 16px !important;
+    border-radius: 13px !important;
+  }
+
+  .history-table {
+    min-width: 840px !important;
+  }
+
+  .history-table th,
+  .history-table td {
+    padding: 12px !important;
+    font-size: 13px !important;
+  }
+
+  .history-actions {
+    white-space: normal !important;
+  }
+
+  .history-actions button {
+    min-height: 42px !important;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .detail-summary {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .detail-stat {
+    padding: 16px !important;
+  }
+
+  .detail-stat strong {
+    font-size: 22px !important;
+  }
+
+  .modal {
+    padding: 0 !important;
+    align-items: end !important;
+  }
+
+  .modal-box {
+    width: 100% !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    border-radius: 18px 18px 0 0 !important;
+    padding: 20px !important;
+  }
+
+  .modal-head h2 {
+    font-size: 21px !important;
+  }
+
+  .toast {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 560px) and (pointer: coarse) {
+  .main {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .topbar {
+    grid-template-columns: 50px minmax(0, 1fr) !important;
+  }
+
+  .mobile-menu-btn {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  h1 {
+    font-size: 26px !important;
+  }
+
+  .stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ledger-mini-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ledger-mini-grid div {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 0 !important;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ledger-mini-grid div:last-child {
+    border-bottom: 0;
+  }
+
+  .ledger-mini-grid span {
+    font-size: 11px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .ledger-mini-grid strong {
+    font-size: 15px !important;
+  }
+
+  .card-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .data-tool-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cloud-user {
+    max-width: 48vw !important;
+  }
+}
