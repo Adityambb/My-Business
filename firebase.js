@@ -2,9 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
+  EmailAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  linkWithCredential,
   onAuthStateChanged,
-  browserLocalPersistence,
+  inMemoryPersistence,
   setPersistence,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -34,8 +38,9 @@ if (configured) {
   auth = getAuth(app);
   db = getFirestore(app);
 
-  // Keep the Firebase login persisted in this browser/device.
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
+  // Keep authentication only in memory. A full page reload clears the
+  // session, so the private ledger asks for credentials again.
+  setPersistence(auth, inMemoryPersistence).catch((error) => {
     console.error("Firebase persistence setup failed:", error);
   });
 }
@@ -61,10 +66,39 @@ export async function signInGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // Popup is the reliable choice for a GitHub Pages-hosted app.
-  // It avoids the cross-origin storage issue that affects redirect flows on
-  // non-Firebase hosting domains.
   const result = await signInWithPopup(auth, provider);
+  return result.user;
+}
+
+export async function signInEmailPassword(email, password) {
+  if (!configured) {
+    throw new Error("Firebase is not configured yet.");
+  }
+
+  const result = await signInWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
+
+  return result.user;
+}
+
+export async function resetEmailPassword(email) {
+  if (!configured) {
+    throw new Error("Firebase is not configured yet.");
+  }
+
+  await sendPasswordResetEmail(auth, email.trim());
+}
+
+export async function linkCurrentUserWithPassword(email, password) {
+  if (!configured || !auth?.currentUser) {
+    throw new Error("No signed-in user is available for password setup.");
+  }
+
+  const credential = EmailAuthProvider.credential(email.trim(), password);
+  const result = await linkWithCredential(auth.currentUser, credential);
   return result.user;
 }
 
