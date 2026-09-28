@@ -237,6 +237,9 @@ function setView(view, options = {}) {
   const retentionModal = $("retentionModal");
   if (retentionModal) retentionModal.classList.add("hidden");
 
+  const billModal = $("billModal");
+  if (billModal) billModal.classList.add("hidden");
+
   const fromHistory = Boolean(options.fromHistory);
   const currentView = document.querySelector(".view.active")?.id;
 
@@ -1643,6 +1646,333 @@ window.quickPayment = function(id) {
 };
 
 
+let billPdfLibraryPromise = null;
+
+function billNumber(customerId, billDate) {
+  const shortId = String(customerId || "").replaceAll("-", "").slice(-6).toUpperCase() || "000000";
+  return "INV-" + String(billDate || "").replaceAll("-", "") + "-" + shortId;
+}
+
+function getBillSelection() {
+  const customer = customerById($("billCustomer")?.value);
+  const billDate = $("billDate")?.value || today();
+  if (!customer) return null;
+
+  const items = customer.purchases.filter(p => p.date === billDate);
+  const total = items.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const accountBalance = Math.max(totals(customer).balance, 0);
+
+  return {
+    customer,
+    billDate,
+    billNo: billNumber(customer.id, billDate),
+    items,
+    total,
+    accountBalance
+  };
+}
+
+function populateBillCustomers(selectedId = "") {
+  const select = $("billCustomer");
+  if (!select) return;
+
+  select.innerHTML = state.customers.length
+    ? '<option value="">Select customer</option>' +
+      state.customers.map(c => '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>').join("")
+    : '<option value="">No customers yet</option>';
+
+  if (selectedId && state.customers.some(c => c.id === selectedId)) {
+    select.value = selectedId;
+  } else if (state.customers.length) {
+    select.value = state.customers[0].id;
+  }
+}
+
+function renderBillPreview() {
+  const preview = $("billPreview");
+  const printBtn = $("printBillBtn");
+  const pdfBtn = $("downloadBillPdfBtn");
+  const shareBtn = $("shareBillBtn");
+  const info = getBillSelection();
+
+  if (!preview) return;
+
+  if (!info) {
+    preview.innerHTML = '<div class="bill-empty-state">Select a customer and date to preview the bill.</div>';
+    [printBtn, pdfBtn, shareBtn].forEach(btn => { if (btn) btn.disabled = true; });
+    return;
+  }
+
+  if (!info.items.length) {
+    preview.innerHTML =
+      '<div class="bill-empty-state"><div><strong>No purchases found for this customer on ' +
+      escapeHtml(formatDate(info.billDate)) +
+      '.</strong><p>Add/save a purchase for this date, then generate the bill.</p></div></div>';
+    [printBtn, pdfBtn, shareBtn].forEach(btn => { if (btn) btn.disabled = true; });
+    return;
+  }
+
+  const rows = info.items.map((p, index) =>
+    '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td>' + escapeHtml(p.product) + '</td>' +
+      '<td>' + escapeHtml(String(p.quantity)) + ' ' + escapeHtml(p.unit || "") + '</td>' +
+      '<td>' + money(p.rate) + '</td>' +
+      '<td>' + money(p.amount) + '</td>' +
+    '</tr>'
+  ).join("");
+
+  preview.innerHTML =
+    '<div class="bill-print-sheet">' +
+      '<div class="bill-business-header">' +
+        '<h1>RAJENDRA SHAW &amp; SON</h1>' +
+        '<p>Customer Billing System</p>' +
+      '</div>' +
+
+      '<div class="bill-title-row">' +
+        '<div><h2>SALES BILL</h2><div class="bill-meta">Customer copy</div></div>' +
+        '<div class="bill-meta"><div><strong>Bill No:</strong> ' + escapeHtml(info.billNo) + '</div>' +
+          '<div><strong>Date:</strong> ' + escapeHtml(formatDate(info.billDate)) + '</div></div>' +
+      '</div>' +
+
+      '<div class="bill-customer-box">' +
+        '<strong>' + escapeHtml(info.customer.name) + '</strong>' +
+        '<div>' + escapeHtml(info.customer.phone || "No phone") + '</div>' +
+        (info.customer.address ? '<div>' + escapeHtml(info.customer.address) + '</div>' : '') +
+      '</div>' +
+
+      '<table class="bill-items-table">' +
+        '<thead><tr><th>#</th><th>Product</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+
+      '<div class="bill-totals">' +
+        '<div class="bill-total-row grand-total"><span>Grand Total</span><strong>' + money(info.total) + '</strong></div>' +
+        '<div class="bill-total-row account-balance"><span>Current account outstanding</span><strong>' + money(info.accountBalance) + '</strong></div>' +
+      '</div>' +
+
+      '<div class="bill-footer">Thank you for your business.<br>Keep this bill for your records.</div>' +
+    '</div>';
+
+  [printBtn, pdfBtn, shareBtn].forEach(btn => { if (btn) btn.disabled = false; });
+}
+
+function openBillModal(customerId = "") {
+  const modal = $("billModal");
+  if (!modal) return;
+
+  populateBillCustomers(customerId);
+  $("billDate").value = today();
+  modal.classList.remove("hidden");
+  renderBillPreview();
+}
+
+window.generateBill = function(customerId = "") {
+  openBillModal(customerId);
+};
+
+function closeBillModal() {
+  const modal = $("billModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function getBillFileName(info) {
+  const safeName = info.customer.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "customer";
+  return info.billNo + "-" + safeName + ".pdf";
+}
+
+function billShareText(info) {
+  const itemText = info.items.map((p, i) =>
+    (i + 1) + ". " + p.product + " | " + p.quantity + " " + (p.unit || "") + " | " + money(p.amount)
+  ).join("\n");
+
+  return "RAJENDRA SHAW & SON\nSALES BILL\n" +
+    "Bill No: " + info.billNo + "\n" +
+    "Date: " + formatDate(info.billDate) + "\n" +
+    "Customer: " + info.customer.name + "\n\n" +
+    itemText + "\n\n" +
+    "Grand Total: " + money(info.total);
+}
+
+async function getJsPDF() {
+  if (!billPdfLibraryPromise) {
+    billPdfLibraryPromise = import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm").then(module => module.jsPDF || module.default);
+  }
+  return billPdfLibraryPromise;
+}
+
+async function createBillPdf(info) {
+  const JsPDF = await getJsPDF();
+  if (!JsPDF) throw new Error("PDF library could not be loaded.");
+
+  const pdf = new JsPDF({ unit: "mm", format: "a4" });
+  const left = 18;
+  const right = 192;
+  let y = 20;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.text("RAJENDRA SHAW & SON", 105, y, { align: "center" });
+  y += 6;
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text("Customer Billing System", 105, y, { align: "center" });
+  y += 8;
+  pdf.setLineWidth(0.5);
+  pdf.line(left, y, right, y);
+  y += 9;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(14);
+  pdf.text("SALES BILL", left, y);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text("Bill No: " + info.billNo, right, y - 2, { align: "right" });
+  pdf.text("Date: " + formatDate(info.billDate), right, y + 3, { align: "right" });
+  y += 10;
+
+  pdf.setFillColor(246, 248, 251);
+  pdf.rect(left, y, right - left, 20, "F");
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(10);
+  pdf.text(info.customer.name, left + 4, y + 7);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text(info.customer.phone || "No phone", left + 4, y + 12);
+  if (info.customer.address) {
+    const addressLines = pdf.splitTextToSize(info.customer.address, 120);
+    pdf.text(addressLines.slice(0, 2), left + 70, y + 7);
+  }
+  y += 28;
+
+  const cols = { no: 18, product: 31, qty: 122, rate: 151, amount: 189 };
+  pdf.setFillColor(243, 244, 246);
+  pdf.rect(left, y - 5, right - left, 8, "F");
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8);
+  pdf.text("#", cols.no, y);
+  pdf.text("Product", cols.product, y);
+  pdf.text("Qty", cols.qty, y, { align: "right" });
+  pdf.text("Rate", cols.rate, y, { align: "right" });
+  pdf.text("Amount", cols.amount, y, { align: "right" });
+  y += 6;
+
+  pdf.setFont("helvetica", "normal");
+  info.items.forEach((item, index) => {
+    const productLines = pdf.splitTextToSize(String(item.product || "-"), 84);
+    const rowHeight = Math.max(7, productLines.length * 4.5);
+
+    if (y + rowHeight > 270) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    pdf.text(String(index + 1), cols.no, y);
+    pdf.text(productLines.slice(0, 3), cols.product, y);
+    pdf.text(String(item.quantity) + " " + String(item.unit || ""), cols.qty, y, { align: "right" });
+    pdf.text("Rs. " + Number(item.rate || 0).toFixed(2), cols.rate, y, { align: "right" });
+    pdf.text("Rs. " + Number(item.amount || 0).toFixed(2), cols.amount, y, { align: "right" });
+    y += rowHeight;
+    pdf.setDrawColor(220, 224, 230);
+    pdf.line(left, y - 2, right, y - 2);
+  });
+
+  y += 7;
+  pdf.setDrawColor(17, 24, 39);
+  pdf.setLineWidth(0.6);
+  pdf.line(125, y, right, y);
+  y += 7;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(12);
+  pdf.text("Grand Total", 125, y);
+  pdf.text("Rs. " + Number(info.total).toFixed(2), right, y, { align: "right" });
+  y += 8;
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text("Current account outstanding: Rs. " + Number(info.accountBalance).toFixed(2), 125, y);
+  y += 14;
+  pdf.line(left, y, right, y);
+  y += 6;
+  pdf.text("Thank you for your business.", 105, y, { align: "center" });
+  pdf.text("Customer copy", 105, y + 4, { align: "center" });
+
+  return pdf;
+}
+
+async function downloadBillPdf() {
+  const info = getBillSelection();
+  if (!info || !info.items.length) return showToast("No purchases found for this bill date.");
+
+  const button = $("downloadBillPdfBtn");
+  button.disabled = true;
+  button.textContent = "Creating PDF…";
+
+  try {
+    const pdf = await createBillPdf(info);
+    pdf.save(getBillFileName(info));
+    showToast("Bill PDF downloaded successfully.");
+  } catch (error) {
+    console.error("Bill PDF error:", error);
+    showToast("Could not create PDF. Use Print Bill → Save as PDF.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Download PDF";
+  }
+}
+
+async function shareBill() {
+  const info = getBillSelection();
+  if (!info || !info.items.length) return showToast("No purchases found for this bill date.");
+
+  const text = billShareText(info);
+
+  try {
+    const pdf = await createBillPdf(info);
+    const blob = pdf.output("blob");
+    const file = new File([blob], getBillFileName(info), { type: "application/pdf" });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "Sales Bill - " + info.customer.name,
+        text: "Sales bill " + info.billNo + " for " + info.customer.name + ".",
+        files: [file]
+      });
+      return;
+    }
+
+    if (navigator.share) {
+      await navigator.share({ title: "Sales Bill - " + info.customer.name, text });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      showToast("Bill details copied. You can paste them into WhatsApp or another app.");
+    } else {
+      showToast("Sharing is not supported on this browser. Download the PDF instead.");
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    console.error("Bill share error:", error);
+    showToast("Could not share the bill. Download the PDF instead.");
+  }
+}
+
+$("billCustomer")?.addEventListener("change", renderBillPreview);
+$("billDate")?.addEventListener("change", renderBillPreview);
+$("closeBillModal")?.addEventListener("click", closeBillModal);
+$("billModal")?.addEventListener("click", (event) => {
+  if (event.target === $("billModal")) closeBillModal();
+});
+$("printBillBtn")?.addEventListener("click", () => {
+  const info = getBillSelection();
+  if (!info || !info.items.length) return showToast("No purchases found for this bill date.");
+  window.print();
+});
+$("downloadBillPdfBtn")?.addEventListener("click", downloadBillPdf);
+$("shareBillBtn")?.addEventListener("click", shareBill);
+
 function openEditPurchaseModal(customerId, purchaseId) {
   const customer = customerById(customerId);
   if (!customer) return;
@@ -2219,6 +2549,9 @@ if (!window.history.state || !window.history.state.view) {
 window.addEventListener("popstate", async (event) => {
   const retentionModal = $("retentionModal");
   if (retentionModal) retentionModal.classList.add("hidden");
+
+  const billModal = $("billModal");
+  if (billModal) billModal.classList.add("hidden");
 
   // LocalStorage is already current because save() writes synchronously.
   // Finish any pending Firebase write before displaying the previous page.
