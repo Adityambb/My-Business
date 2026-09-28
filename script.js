@@ -1792,7 +1792,7 @@ function billShareText(info) {
     (i + 1) + ". " + p.product + " | " + p.quantity + " " + (p.unit || "") + " | " + money(p.amount)
   ).join("\n");
 
-  return "RAJENDRA SHAW & SON\nSALES BILL\n" +
+  return "RAJENDRA SHAW\nSALES BILL\n" +
     "Bill No: " + info.billNo + "\n" +
     "Date: " + formatDate(info.billDate) + "\n" +
     "Customer: " + info.customer.name + "\n\n" +
@@ -1818,7 +1818,7 @@ async function createBillPdf(info) {
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(18);
-  pdf.text("RAJENDRA SHAW & SON", 105, y, { align: "center" });
+  pdf.text("RAJENDRA SHAW", 105, y, { align: "center" });
   y += 6;
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
