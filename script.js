@@ -1135,7 +1135,7 @@ window.openSupplier = function(id, options = {}) {
     </div>
   `;
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setView("customerDetail", { fromHistory: true });
 };
 
 
