@@ -222,7 +222,13 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 });
 
 $("quickPurchase").addEventListener("click", () => setView("purchases"));
-$("backCustomers").addEventListener("click", () => setView("customers"));
+$("backCustomers").addEventListener("click", () => {
+  if (window.history.state?.view === "customerDetail" && window.history.length > 1) {
+    window.history.back();
+  } else {
+    setView("customers");
+  }
+});
 
 $("addCustomerBtn").addEventListener("click", () => {
   $("modal").classList.remove("hidden");
@@ -306,7 +312,7 @@ window.deleteCustomerPayment = function(customerId, paymentId) {
   save();
   renderDashboard();
   renderCustomers();
-  openCustomer(customerId);
+  openCustomer(customerId, { fromHistory: true });
   showToast("Customer payment deleted successfully.");
 };
 
@@ -344,7 +350,7 @@ $("editPaymentForm").addEventListener("submit", (e) => {
   $("editPaymentModal").classList.add("hidden");
   renderDashboard();
   renderCustomers();
-  openCustomer(customer.id);
+  openCustomer(customer.id, { fromHistory: true });
   showToast("Customer payment updated successfully.");
 });
 
@@ -717,7 +723,7 @@ window.deleteLabourWork = function(labourId, workId) {
   labour.work.splice(index, 1);
   save();
   renderLabours();
-  openLabour(labourId);
+  openLabour(labourId, { fromHistory: true });
   showToast("Labour work deleted.");
 };
 
@@ -757,7 +763,7 @@ $("editLabourWorkForm").addEventListener("submit", (e) => {
   save();
   $("editLabourWorkModal").classList.add("hidden");
   renderLabours();
-  openLabour(labour.id);
+  openLabour(labour.id, { fromHistory: true });
   showToast("Labour work updated.");
 });
 
@@ -790,7 +796,7 @@ window.deleteLabourPayment = function(labourId, paymentId) {
   labour.payments.splice(index, 1);
   save();
   renderLabours();
-  openLabour(labourId);
+  openLabour(labourId, { fromHistory: true });
   showToast("Labour payment deleted.");
 };
 
@@ -823,7 +829,7 @@ $("editLabourPaymentForm").addEventListener("submit", (e) => {
   save();
   $("editLabourPaymentModal").classList.add("hidden");
   renderLabours();
-  openLabour(labour.id);
+  openLabour(labour.id, { fromHistory: true });
   showToast("Labour payment updated.");
 });
 
@@ -1174,7 +1180,7 @@ window.deleteSupplierPurchase = function(supplierId, purchaseId) {
 
   save();
   renderSuppliers();
-  openSupplier(supplierId);
+  openSupplier(supplierId, { fromHistory: true });
   showToast("Stock purchase deleted successfully.");
 };
 
@@ -1223,7 +1229,7 @@ $("editSupplierPurchaseForm").addEventListener("submit", (e) => {
   save();
   $("editSupplierPurchaseModal").classList.add("hidden");
   renderSuppliers();
-  openSupplier(supplier.id);
+  openSupplier(supplier.id, { fromHistory: true });
   showToast("Stock purchase updated successfully.");
 });
 
@@ -1254,7 +1260,7 @@ window.editSupplierPayment = function(supplierId, paymentId) {
 
   save();
   renderSuppliers();
-  openSupplier(supplierId);
+  openSupplier(supplierId, { fromHistory: true });
   showToast("Supplier payment updated.");
 };
 
@@ -1271,7 +1277,7 @@ window.deleteSupplierPayment = function(supplierId, paymentId) {
   supplier.payments.splice(index, 1);
   save();
   renderSuppliers();
-  openSupplier(supplierId);
+  openSupplier(supplierId, { fromHistory: true });
   showToast("Supplier payment deleted.");
 };
 
@@ -1605,7 +1611,7 @@ window.deletePurchase = function(customerId, purchaseId) {
   save();
   renderDashboard();
   renderCustomers();
-  openCustomer(customerId);
+  openCustomer(customerId, { fromHistory: true });
   showToast("Purchase deleted successfully.");
 };
 
@@ -1655,7 +1661,7 @@ $("editPurchaseForm").addEventListener("submit", (e) => {
 
   renderDashboard();
   renderCustomers();
-  openCustomer(customer.id);
+  openCustomer(customer.id, { fromHistory: true });
 
   showToast("Purchase updated successfully.");
 });
