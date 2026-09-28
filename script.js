@@ -1869,6 +1869,24 @@ async function initializeFirebaseConnection() {
   const showSignupBtn = $("showSignupBtn");
   const showSigninBtn = $("showSigninBtn");
 
+  // Password visibility controls for every authentication password field.
+  [
+    ["loginPassword", "toggleLoginPassword"],
+    ["signupPassword", "toggleSignupPassword"],
+    ["signupPasswordConfirm", "toggleSignupPasswordConfirm"]
+  ].forEach(([inputId, buttonId]) => {
+    const input = $(inputId);
+    const button = $(buttonId);
+    if (!input || !button) return;
+
+    button.addEventListener("click", () => {
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "Show" : "Hide";
+      button.setAttribute("aria-label", visible ? "Show password" : "Hide password");
+    });
+  });
+
   function showLoginMode() {
     $("signinCard").classList.remove("hidden");
     $("signupCard").classList.add("hidden");
