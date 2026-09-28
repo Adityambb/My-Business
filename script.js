@@ -10,7 +10,7 @@ import {
   signOutGoogle,
   loadCloudState,
   saveCloudState
-} from "./firebase.js?v=20260928-1245";
+} from "./firebase.js?v=20260928-1310";
 
 const STORAGE_KEY = "ledgerpro_data_v1";
 const PRIMARY_EMAIL = "098adityakumar@gmail.com";
