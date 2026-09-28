@@ -35,7 +35,10 @@
           </label>
 
           <label>Password
-            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required />
+            <div class="password-field">
+              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required />
+              <button id="toggleLoginPassword" class="password-toggle" type="button" aria-label="Show password">Show</button>
+            </div>
           </label>
 
           <button id="loginSubmitBtn" class="primary full" type="submit">Sign in securely</button>
@@ -55,11 +58,17 @@
           </label>
 
           <label>Password
-            <input id="signupPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required />
+            <div class="password-field">
+              <input id="signupPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required />
+              <button id="toggleSignupPassword" class="password-toggle" type="button" aria-label="Show password">Show</button>
+            </div>
           </label>
 
           <label>Confirm password
-            <input id="signupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" placeholder="Re-enter password" required />
+            <div class="password-field">
+              <input id="signupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" placeholder="Re-enter password" required />
+              <button id="toggleSignupPasswordConfirm" class="password-toggle" type="button" aria-label="Show password">Show</button>
+            </div>
           </label>
 
           <button id="signupSubmitBtn" class="primary full" type="submit">Create account</button>
@@ -830,6 +839,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script type="module" src="script.js?v=20260928-1400"></script>
+  <script type="module" src="script.js?v=20260928-1420"></script>
 </body>
 </html>
