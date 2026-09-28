@@ -40,6 +40,8 @@ const $ = (id) => document.getElementById(id);
 let currentFirebaseUser = null;
 let cloudSyncTimer = null;
 let cloudSyncInProgress = false;
+let cloudSavePromise = null;
+let cloudSaveRequested = false;
 let suppressCloudSync = false;
 
 
@@ -61,32 +63,69 @@ function today() {
 
 
 function save() {
+  // Always persist the complete business state locally first.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
   if (currentFirebaseUser && !suppressCloudSync && isFirebaseConfigured()) {
+    cloudSaveRequested = true;
     queueCloudSave();
   }
 }
 
 function queueCloudSave() {
   clearTimeout(cloudSyncTimer);
-  cloudSyncTimer = setTimeout(async () => {
-    if (!currentFirebaseUser || cloudSyncInProgress || suppressCloudSync) return;
+  if (!currentFirebaseUser || suppressCloudSync || !isFirebaseConfigured()) return;
 
-    cloudSyncInProgress = true;
-    setCloudStatus("Saving…", "connected");
-
-    try {
-      await saveCloudState(currentFirebaseUser.uid, state);
-      setCloudStatus("Cloud saved", "connected");
-    } catch (error) {
-      console.error("Cloud save failed:", error);
-      setCloudStatus("Cloud save failed", "error");
-      showToast("Cloud save failed. Your local copy is still saved.");
-    } finally {
-      cloudSyncInProgress = false;
-    }
+  cloudSyncTimer = setTimeout(() => {
+    flushCloudSave();
   }, 500);
+}
+
+// Flush the pending cloud write immediately. Navigation uses this so a recent
+// change is not left waiting behind the normal debounce.
+async function flushCloudSave() {
+  clearTimeout(cloudSyncTimer);
+
+  if (!currentFirebaseUser || suppressCloudSync || !isFirebaseConfigured()) {
+    cloudSaveRequested = false;
+    return;
+  }
+
+  if (cloudSyncInProgress) {
+    if (cloudSavePromise) await cloudSavePromise;
+    if (cloudSaveRequested) await flushCloudSave();
+    return;
+  }
+
+  const uid = currentFirebaseUser.uid;
+  const snapshot = JSON.parse(JSON.stringify(state));
+  cloudSaveRequested = false;
+  cloudSyncInProgress = true;
+  setCloudStatus("Saving…", "connected");
+
+  cloudSavePromise = saveCloudState(uid, snapshot)
+    .then(() => {
+      if (currentFirebaseUser && currentFirebaseUser.uid === uid) {
+        setCloudStatus("Cloud saved", "connected");
+      }
+    })
+    .catch((error) => {
+      console.error("Cloud save failed:", error);
+      if (currentFirebaseUser && currentFirebaseUser.uid === uid) {
+        setCloudStatus("Cloud save failed", "error");
+      }
+      showToast("Cloud save failed. Your local copy is still saved.");
+    })
+    .finally(() => {
+      cloudSyncInProgress = false;
+      cloudSavePromise = null;
+    });
+
+  await cloudSavePromise;
+
+  if (cloudSaveRequested) {
+    await flushCloudSave();
+  }
 }
 
 function setCloudStatus(text, className = "") {
@@ -127,9 +166,18 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
-function setView(view) {
+function setView(view, options = {}) {
   const target = $(view);
   if (!target) return;
+
+  const fromHistory = Boolean(options.fromHistory);
+
+  if (!fromHistory) {
+    const current = window.history.state;
+    if (!current || current.view !== view) {
+      window.history.pushState({ view }, "", window.location.href);
+    }
+  }
 
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   target.classList.add("active");
@@ -169,7 +217,6 @@ function setView(view) {
   }
   if (view === "labourPayment") populateLabourSelects();
 }
-
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setView(btn.dataset.view));
 });
@@ -512,9 +559,17 @@ window.quickLabourPayment = function(id) {
   $("labourPaymentLabour").value = id;
 };
 
-window.openLabour = function(id) {
+window.openLabour = function(id, options = {}) {
   const labour = labourById(id);
   if (!labour) return;
+
+  if (!options.fromHistory) {
+    window.history.pushState(
+      { view: "customerDetail", entityType: "labour", entityId: id },
+      "",
+      window.location.href
+    );
+  }
 
   const t = labourTotals(labour);
 
@@ -609,7 +664,7 @@ window.openLabour = function(id) {
     </div>
   `;
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setView("customerDetail", { fromHistory: true });
 };
 
 function updateEditLabourPreview() {
@@ -980,9 +1035,17 @@ window.quickSupplierPayment = function(id) {
   $("supplierPaymentSupplier").value = id;
 };
 
-window.openSupplier = function(id) {
+window.openSupplier = function(id, options = {}) {
   const supplier = supplierById(id);
   if (!supplier) return;
+
+  if (!options.fromHistory) {
+    window.history.pushState(
+      { view: "customerDetail", entityType: "supplier", entityId: id },
+      "",
+      window.location.href
+    );
+  }
 
   const t = supplierTotals(supplier);
 
@@ -1391,9 +1454,17 @@ function renderCustomers() {
     : `<div class="panel"><p>No customers found. Add your first customer.</p></div>`;
 }
 
-window.openCustomer = function(id) {
+window.openCustomer = function(id, options = {}) {
   const customer = customerById(id);
   if (!customer) return;
+
+  if (!options.fromHistory) {
+    window.history.pushState(
+      { view: "customerDetail", entityType: "customer", entityId: id },
+      "",
+      window.location.href
+    );
+  }
 
   const t = totals(customer);
 
@@ -1483,7 +1554,7 @@ window.openCustomer = function(id) {
     </div>
   `;
 
-  setView("customerDetail");
+  setView("customerDetail", { fromHistory: true });
 };
 
 window.quickPayment = function(id) {
@@ -1929,6 +2000,36 @@ $("editLabourForm").addEventListener("submit", (e) => {
   showToast("Labour details updated.");
 });
 
+// Browser history for this single-page app.
+if (!window.history.state || !window.history.state.view) {
+  window.history.replaceState({ view: "dashboard" }, "", window.location.href);
+}
+
+window.addEventListener("popstate", async (event) => {
+  // LocalStorage is already current because save() writes synchronously.
+  // Finish any pending Firebase write before displaying the previous page.
+  await flushCloudSave();
+
+  const nav = event.state || { view: "dashboard" };
+
+  if (nav.view === "customerDetail") {
+    if (nav.entityType === "customer") {
+      openCustomer(nav.entityId, { fromHistory: true });
+      return;
+    }
+    if (nav.entityType === "supplier") {
+      openSupplier(nav.entityId, { fromHistory: true });
+      return;
+    }
+    if (nav.entityType === "labour") {
+      openLabour(nav.entityId, { fromHistory: true });
+      return;
+    }
+  }
+
+  setView(nav.view || "dashboard", { fromHistory: true });
+});
+
 // Mobile navigation
 const mobileMenuBtn = $("mobileMenuBtn");
 const mobileOverlay = $("mobileOverlay");
@@ -1950,6 +2051,12 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 });
 
 
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    flushCloudSave();
+  }
+});
 
 // Delete old transaction history while keeping customer/supplier/labour profiles.
 function getRetentionCutoff(months) {
