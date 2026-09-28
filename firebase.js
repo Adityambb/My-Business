@@ -32,6 +32,7 @@ const configured =
 let app = null;
 let auth = null;
 let db = null;
+let persistenceReady = Promise.resolve();
 
 if (configured) {
   app = initializeApp(firebaseConfig);
@@ -40,8 +41,9 @@ if (configured) {
 
   // Keep authentication only in memory. A full page reload clears the
   // session, so the private ledger asks for credentials again.
-  setPersistence(auth, inMemoryPersistence).catch((error) => {
+  persistenceReady = setPersistence(auth, inMemoryPersistence).catch((error) => {
     console.error("Firebase persistence setup failed:", error);
+    throw error;
   });
 }
 
@@ -63,6 +65,8 @@ export async function signInGoogle() {
     throw new Error("Firebase is not configured yet.");
   }
 
+  await persistenceReady;
+
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
@@ -74,6 +78,8 @@ export async function signInEmailPassword(email, password) {
   if (!configured) {
     throw new Error("Firebase is not configured yet.");
   }
+
+  await persistenceReady;
 
   const result = await signInWithEmailAndPassword(
     auth,
