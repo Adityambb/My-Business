@@ -3,14 +3,17 @@ import {
   onUserChanged,
   signInGoogle,
   signInEmailPassword,
+  signUpEmailPassword,
   resetEmailPassword,
   linkCurrentUserWithPassword,
+  unlinkGoogleFromCurrentUser,
   signOutGoogle,
   loadCloudState,
   saveCloudState
 } from "./firebase.js?v=20260928-1245";
 
 const STORAGE_KEY = "ledgerpro_data_v1";
+const PRIMARY_EMAIL = "098adityakumar@gmail.com";
 
 let legacyLocalState = null;
 try {
@@ -1865,10 +1868,32 @@ function authErrorMessage(error) {
 
 async function initializeFirebaseConnection() {
   const loginForm = $("appLoginForm");
+  const signupForm = $("appSignupForm");
   const forgotPasswordBtn = $("forgotPasswordBtn");
   const googleSetupBtn = $("googleSetupBtn");
   const passwordSetupForm = $("passwordSetupForm");
   const cancelPasswordSetupBtn = $("cancelPasswordSetupBtn");
+  const showSignupBtn = $("showSignupBtn");
+  const showSigninBtn = $("showSigninBtn");
+
+  function showLoginMode() {
+    $("signinCard").classList.remove("hidden");
+    $("signupCard").classList.add("hidden");
+    showSignupBtn.classList.add("hidden");
+    showSigninBtn.classList.remove("hidden");
+    showAuthMessage("Sign in to your existing MyBills account.");
+  }
+
+  function showSignupMode() {
+    $("signinCard").classList.add("hidden");
+    $("signupCard").classList.remove("hidden");
+    showSignupBtn.classList.remove("hidden");
+    showSigninBtn.classList.add("hidden");
+    showAuthMessage("Create a new Firebase account. New users start with a fresh ledger.");
+  }
+
+  if (showSignupBtn) showSignupBtn.addEventListener("click", showSignupMode);
+  if (showSigninBtn) showSigninBtn.addEventListener("click", showLoginMode);
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -1897,6 +1922,36 @@ async function initializeFirebaseConnection() {
     });
   }
 
+  if (signupForm) {
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = $("signupName").value.trim();
+      const email = $("signupEmail").value.trim();
+      const password = $("signupPassword").value;
+      const confirmPassword = $("signupPasswordConfirm").value;
+
+      if (!name) return showAuthMessage("Enter your name.", "error");
+      if (!email || !password) return showAuthMessage("Enter your email and password.", "error");
+      if (password.length < 8) return showAuthMessage("Use a password of at least 8 characters.", "error");
+      if (password !== confirmPassword) return showAuthMessage("Passwords do not match.", "error");
+
+      const button = $("signupSubmitBtn");
+      button.disabled = true;
+      button.textContent = "Creating account…";
+      showAuthMessage("Creating your secure account…");
+
+      try {
+        await signUpEmailPassword(name, email, password);
+      } catch (error) {
+        console.error("Email/password sign-up error:", error);
+        showAuthMessage(authErrorMessage(error), "error");
+        button.disabled = false;
+        button.textContent = "Create account";
+      }
+    });
+  }
+
   if (forgotPasswordBtn) {
     forgotPasswordBtn.addEventListener("click", async () => {
       const email = $("loginEmail").value.trim();
@@ -1908,7 +1963,7 @@ async function initializeFirebaseConnection() {
       try {
         forgotPasswordBtn.disabled = true;
         await resetEmailPassword(email);
-        showAuthMessage("Password reset email sent. Check your inbox.");
+        showAuthMessage("Password reset email sent. Check your inbox.", "success");
       } catch (error) {
         console.error("Password reset error:", error);
         showAuthMessage(authErrorMessage(error), "error");
@@ -1923,14 +1978,24 @@ async function initializeFirebaseConnection() {
       try {
         googleSetupBtn.disabled = true;
         googleSetupBtn.textContent = "Opening Google…";
-        showAuthMessage("Sign in with your existing Google account for one-time password setup.");
+        showAuthMessage("Owner verification: choose the primary Google account.");
 
-        await signInGoogle();
+        const googleUser = await signInGoogle();
+
+        if ((googleUser.email || "").toLowerCase() !== PRIMARY_EMAIL) {
+          await signOutGoogle();
+          googleSetupBtn.disabled = false;
+          googleSetupBtn.textContent = "One-time owner setup";
+          return showAuthMessage(
+            "Owner setup is restricted to the primary account. Use Sign Up for a separate account.",
+            "error"
+          );
+        }
       } catch (error) {
         console.error("Google setup error:", error);
         showAuthMessage(authErrorMessage(error), "error");
         googleSetupBtn.disabled = false;
-        googleSetupBtn.textContent = "One-time setup with Google";
+        googleSetupBtn.textContent = "One-time owner setup";
       }
     });
   }
@@ -1940,7 +2005,11 @@ async function initializeFirebaseConnection() {
       e.preventDefault();
 
       if (!currentFirebaseUser) {
-        return showAuthMessage("Please complete Google sign-in first.", "error");
+        return showAuthMessage("Please complete owner Google verification first.", "error");
+      }
+
+      if ((currentFirebaseUser.email || "").toLowerCase() !== PRIMARY_EMAIL) {
+        return showAuthMessage("Only the primary owner account can complete this setup.", "error");
       }
 
       const password = $("setupPassword").value;
@@ -1961,10 +2030,17 @@ async function initializeFirebaseConnection() {
       try {
         const linkedUser = await linkCurrentUserWithPassword(currentFirebaseUser.email, password);
         currentFirebaseUser = linkedUser;
+
+        try {
+          await unlinkGoogleFromCurrentUser();
+        } catch (unlinkError) {
+          console.warn("Google provider could not be unlinked. Email/password remains linked.", unlinkError);
+        }
+
         $("passwordSetupCard").classList.add("hidden");
         hideAuthGate();
         showAuthMessage("", "success");
-        showToast("Secure password created. The ledger is now unlocked.");
+        showToast("Owner password created. Your existing business data is unlocked.");
       } catch (error) {
         console.error("Password linking error:", error);
         showAuthMessage(authErrorMessage(error), "error");
@@ -2016,6 +2092,7 @@ async function initializeFirebaseConnection() {
 
       if ($("passwordSetupCard")) $("passwordSetupCard").classList.add("hidden");
       setAuthGate("Your business ledger is locked.");
+      showLoginMode();
       rerenderAll();
       return;
     }
@@ -2025,25 +2102,35 @@ async function initializeFirebaseConnection() {
     $("cloudLogoutBtn").classList.remove("hidden");
     setCloudStatus("Connecting…");
 
+    const signedInWithGoogle = user.providerData?.some(
+      provider => provider.providerId === "google.com"
+    );
+
+    // Google is only an owner password-setup route.
+    if (signedInWithGoogle && (user.email || "").toLowerCase() !== PRIMARY_EMAIL) {
+      await signOutGoogle();
+      return;
+    }
+
     try {
       const cloudRaw = await loadCloudState(user.uid);
       const cloudState = cloudRaw ? normalizeState(cloudRaw) : null;
       const cloudHasData = cloudStateHasData(cloudState);
       const localHasData = hasLocalBusinessData(legacyLocalState);
+      const isPrimaryAccount = (user.email || "").toLowerCase() === PRIMARY_EMAIL;
 
       suppressCloudSync = true;
 
       if (cloudHasData) {
-        // Firebase is authoritative. Do not overwrite cloud data with an old
-        // browser copy when a cloud ledger already exists.
+        // Firebase is authoritative.
         state = cloudState;
         clearLegacyLocalData();
-      } else if (localHasData) {
+      } else if (isPrimaryAccount && localHasData) {
+        // Only the known owner account can migrate the old browser copy.
         const migrate = confirm(
-          "This Firebase account has no ledger data yet, but this device has an older local copy.\n\n" +
-          "OK = securely upload that existing copy to this Firebase account.\n" +
-          "Cancel = start with an empty cloud ledger.\n\n" +
-          "The browser copy will be removed after the cloud copy is confirmed saved."
+          "This owner Firebase account has no ledger data yet, but this device has an older local copy.\n\n" +
+          "OK = upload that existing owner copy to Firebase.\n" +
+          "Cancel = start the owner cloud ledger empty."
         );
 
         if (migrate) {
@@ -2053,10 +2140,11 @@ async function initializeFirebaseConnection() {
         } else {
           state = createEmptyState();
           clearLegacyLocalData();
+          await saveCloudState(user.uid, state);
         }
       } else {
         state = createEmptyState();
-        clearLegacyLocalData();
+        if (isPrimaryAccount) clearLegacyLocalData();
         await saveCloudState(user.uid, state);
       }
 
@@ -2067,13 +2155,13 @@ async function initializeFirebaseConnection() {
         provider => provider.providerId === "password"
       );
 
-      if (!hasPasswordProvider) {
+      if (signedInWithGoogle && isPrimaryAccount && !hasPasswordProvider) {
         $("setupEmail").textContent = user.email || "";
         $("passwordSetupCard").classList.remove("hidden");
         setAuthGate(
-          "One-time setup: create an email + password for this existing MyBills account. Your current cloud data stays on the same Firebase account."
+          "Owner verification complete. Create the password for your existing primary account."
         );
-        showAuthMessage("Set the password below. The ledger stays locked until it is created.", "success");
+        showAuthMessage("Set your owner password. Your existing cloud ledger stays on this same account.", "success");
       } else {
         hideAuthGate();
         showAuthMessage("", "success");
