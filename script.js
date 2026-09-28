@@ -2,6 +2,9 @@ import {
   isFirebaseConfigured,
   onUserChanged,
   signInGoogle,
+  signInEmailPassword,
+  resetEmailPassword,
+  linkCurrentUserWithPassword,
   signOutGoogle,
   loadCloudState,
   saveCloudState
@@ -9,31 +12,31 @@ import {
 
 const STORAGE_KEY = "ledgerpro_data_v1";
 
-let state;
+let legacyLocalState = null;
 try {
-  state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  legacyLocalState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
 } catch (error) {
-  state = {};
+  legacyLocalState = null;
 }
 
-if (!Array.isArray(state.customers)) state.customers = [];
-if (!Array.isArray(state.suppliers)) state.suppliers = [];
-if (!Array.isArray(state.labours)) state.labours = [];
+let state = {
+  customers: [],
+  suppliers: [],
+  labours: []
+};
 
-state.customers.forEach(c => {
-  if (!Array.isArray(c.purchases)) c.purchases = [];
-  if (!Array.isArray(c.payments)) c.payments = [];
-});
+function clearLegacyLocalData() {
+  localStorage.removeItem(STORAGE_KEY);
+  legacyLocalState = null;
+}
 
-state.suppliers.forEach(s => {
-  if (!Array.isArray(s.purchases)) s.purchases = [];
-  if (!Array.isArray(s.payments)) s.payments = [];
-});
-
-state.labours.forEach(l => {
-  if (!Array.isArray(l.work)) l.work = [];
-  if (!Array.isArray(l.payments)) l.payments = [];
-});
+function createEmptyState() {
+  return {
+    customers: [],
+    suppliers: [],
+    labours: []
+  };
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -44,6 +47,13 @@ let cloudSavePromise = null;
 let cloudSaveRequested = false;
 let suppressCloudSync = false;
 
+
+function showAuthMessage(message, mode = "") {
+  const el = $("authMessage");
+  if (!el) return;
+  el.textContent = message;
+  el.className = `auth-message ${mode}`.trim();
+}
 
 function money(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -63,13 +73,14 @@ function today() {
 
 
 function save() {
-  // Always persist the complete business state locally first.
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-  if (currentFirebaseUser && !suppressCloudSync && isFirebaseConfigured()) {
-    cloudSaveRequested = true;
-    queueCloudSave();
+  if (!currentFirebaseUser || suppressCloudSync || !isFirebaseConfigured()) {
+    showToast("Please sign in before saving business data.");
+    return false;
   }
+
+  cloudSaveRequested = true;
+  queueCloudSave();
+  return true;
 }
 
 function queueCloudSave() {
@@ -114,7 +125,7 @@ async function flushCloudSave() {
       if (currentFirebaseUser && currentFirebaseUser.uid === uid) {
         setCloudStatus("Cloud save failed", "error");
       }
-      showToast("Cloud save failed. Your local copy is still saved.");
+      showToast("Cloud save failed. Please keep the app open and retry.");
     })
     .finally(() => {
       cloudSyncInProgress = false;
@@ -127,7 +138,6 @@ async function flushCloudSave() {
     await flushCloudSave();
   }
 }
-
 function setCloudStatus(text, className = "") {
   const status = $("cloudStatus");
   status.textContent = text;
@@ -1763,11 +1773,14 @@ updateLabourPreview();
 
 
 
-function hasLocalBusinessData() {
+function hasLocalBusinessData(source = state) {
   return Boolean(
-    state.customers.length ||
-    state.suppliers.length ||
-    state.labours.length
+    source &&
+    Array.isArray(source.customers) && source.customers.length ||
+    source &&
+    Array.isArray(source.suppliers) && source.suppliers.length ||
+    source &&
+    Array.isArray(source.labours) && source.labours.length
   );
 }
 
@@ -1817,18 +1830,153 @@ function rerenderAll() {
   renderLabours();
 }
 
+function setAuthGate(message = "", mode = "login") {
+  const gate = $("authGate");
+  if (!gate) return;
+
+  gate.classList.remove("hidden");
+  const messageEl = $("authMessage");
+  if (messageEl) {
+    messageEl.textContent = message;
+    messageEl.className = `auth-message ${mode === "error" ? "error" : ""}`.trim();
+  }
+}
+
+function hideAuthGate() {
+  const gate = $("authGate");
+  if (gate) gate.classList.add("hidden");
+}
+
+function authErrorMessage(error) {
+  const code = error?.code || "";
+
+  const messages = {
+    "auth/invalid-credential": "Email or password is incorrect.",
+    "auth/invalid-login-credentials": "Email or password is incorrect.",
+    "auth/user-disabled": "This account has been disabled.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/operation-not-allowed": "Email/password sign-in is not enabled in Firebase yet.",
+    "auth/network-request-failed": "Network error. Check your internet connection.",
+    "auth/email-already-in-use": "That email is already linked to another Firebase account."
+  };
+
+  return messages[code] || error?.message || "Authentication failed.";
+}
+
 async function initializeFirebaseConnection() {
-  $("cloudLoginBtn").addEventListener("click", async () => {
-    try {
-      setCloudStatus("Signing in…");
-      await signInGoogle();
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      setCloudStatus("Sign-in failed", "error");
-      const code = error?.code ? ` [${error.code}]` : "";
-      showToast(`Google sign-in failed${code}: ${error?.message || "Unknown error"}`);
-    }
-  });
+  const loginForm = $("appLoginForm");
+  const forgotPasswordBtn = $("forgotPasswordBtn");
+  const googleSetupBtn = $("googleSetupBtn");
+  const passwordSetupForm = $("passwordSetupForm");
+  const cancelPasswordSetupBtn = $("cancelPasswordSetupBtn");
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = $("loginEmail").value.trim();
+      const password = $("loginPassword").value;
+
+      if (!email || !password) {
+        return showAuthMessage("Enter your email and password.", "error");
+      }
+
+      const button = $("loginSubmitBtn");
+      button.disabled = true;
+      button.textContent = "Signing in…";
+      showAuthMessage("Checking your credentials…");
+
+      try {
+        await signInEmailPassword(email, password);
+      } catch (error) {
+        console.error("Email/password sign-in error:", error);
+        showAuthMessage(authErrorMessage(error), "error");
+        button.disabled = false;
+        button.textContent = "Sign in securely";
+      }
+    });
+  }
+
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.addEventListener("click", async () => {
+      const email = $("loginEmail").value.trim();
+
+      if (!email) {
+        return showAuthMessage("Enter your email first, then tap Forgot password.", "error");
+      }
+
+      try {
+        forgotPasswordBtn.disabled = true;
+        await resetEmailPassword(email);
+        showAuthMessage("Password reset email sent. Check your inbox.");
+      } catch (error) {
+        console.error("Password reset error:", error);
+        showAuthMessage(authErrorMessage(error), "error");
+      } finally {
+        forgotPasswordBtn.disabled = false;
+      }
+    });
+  }
+
+  if (googleSetupBtn) {
+    googleSetupBtn.addEventListener("click", async () => {
+      try {
+        googleSetupBtn.disabled = true;
+        googleSetupBtn.textContent = "Opening Google…";
+        showAuthMessage("Sign in with your existing Google account for one-time password setup.");
+
+        await signInGoogle();
+      } catch (error) {
+        console.error("Google setup error:", error);
+        showAuthMessage(authErrorMessage(error), "error");
+        googleSetupBtn.disabled = false;
+        googleSetupBtn.textContent = "One-time setup with Google";
+      }
+    });
+  }
+
+  if (passwordSetupForm) {
+    passwordSetupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!currentFirebaseUser) {
+        return showAuthMessage("Please complete Google sign-in first.", "error");
+      }
+
+      const password = $("setupPassword").value;
+      const confirmPassword = $("setupPasswordConfirm").value;
+
+      if (password.length < 8) {
+        return showAuthMessage("Use a password of at least 8 characters.", "error");
+      }
+
+      if (password !== confirmPassword) {
+        return showAuthMessage("Passwords do not match.", "error");
+      }
+
+      const button = $("setupPasswordBtn");
+      button.disabled = true;
+      button.textContent = "Saving password…";
+
+      try {
+        await linkCurrentUserWithPassword(currentFirebaseUser.email, password);
+        $("passwordSetupCard").classList.add("hidden");
+        showAuthMessage("Password setup complete. You can now use email + password to unlock this ledger.", "success");
+      } catch (error) {
+        console.error("Password linking error:", error);
+        showAuthMessage(authErrorMessage(error), "error");
+        button.disabled = false;
+        button.textContent = "Set secure password";
+      }
+    });
+  }
+
+  if (cancelPasswordSetupBtn) {
+    cancelPasswordSetupBtn.addEventListener("click", async () => {
+      $("passwordSetupCard").classList.add("hidden");
+      await signOutGoogle();
+    });
+  }
 
   $("cloudLogoutBtn").addEventListener("click", async () => {
     try {
@@ -1841,81 +1989,102 @@ async function initializeFirebaseConnection() {
 
   if (!isFirebaseConfigured()) {
     setCloudStatus("Firebase not configured", "error");
-    $("cloudLoginBtn").textContent = "Setup Firebase first";
-    $("cloudLoginBtn").disabled = true;
+    $("cloudLoginBtn").classList.add("hidden");
+    setAuthGate("Firebase is not configured. Connect Firebase before using this private ledger.", "error");
     return;
   }
 
-  setCloudStatus("Connecting…");
+  setCloudStatus("Locked");
 
   onUserChanged(async (user) => {
     currentFirebaseUser = user || null;
 
     if (!user) {
+      clearTimeout(cloudSyncTimer);
+      cloudSaveRequested = false;
+      state = createEmptyState();
+      clearLegacyLocalData();
+
       $("cloudUser").textContent = "";
-      $("cloudLoginBtn").classList.remove("hidden");
+      $("cloudLoginBtn").classList.add("hidden");
       $("cloudLogoutBtn").classList.add("hidden");
       $("cloudLoginBtn").disabled = false;
-      $("cloudLoginBtn").textContent = "Sign in with Google";
-      setCloudStatus("Local copy");
-      const help = $("cloudHelp");
-      if (help) help.textContent = "Sign in with Google to sync your data.";
+      $("cloudLoginBtn").textContent = "Sign in securely";
+      setCloudStatus("Locked", "error");
+
+      if ($("passwordSetupCard")) $("passwordSetupCard").classList.add("hidden");
+      setAuthGate("Your business ledger is locked.");
+      rerenderAll();
       return;
     }
 
     $("cloudUser").textContent = user.email || user.displayName || "Signed in";
     $("cloudLoginBtn").classList.add("hidden");
     $("cloudLogoutBtn").classList.remove("hidden");
-    const help = $("cloudHelp");
-    if (help) help.textContent = "Google account connected. Loading your cloud ledger…";
+    setCloudStatus("Connecting…");
 
     try {
-      const cloudState = normalizeState(await loadCloudState(user.uid));
-      const localHasData = hasLocalBusinessData();
+      const cloudRaw = await loadCloudState(user.uid);
+      const cloudState = cloudRaw ? normalizeState(cloudRaw) : null;
       const cloudHasData = cloudStateHasData(cloudState);
+      const localHasData = hasLocalBusinessData(legacyLocalState);
 
       suppressCloudSync = true;
 
-      if (!cloudState || !cloudHasData) {
-        // First cloud use for this account: preserve the browser's existing data.
-        await saveCloudState(user.uid, state);
-        setCloudStatus("Cloud saved", "connected");
-      } else if (!localHasData) {
-        // New device/browser: bring the cloud copy down.
+      if (cloudHasData) {
+        // Firebase is authoritative. Do not overwrite cloud data with an old
+        // browser copy when a cloud ledger already exists.
         state = cloudState;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        rerenderAll();
-        setCloudStatus("Cloud loaded", "connected");
-      } else {
-        // Both sides have data. Do not silently overwrite either one.
-        const useCloud = confirm(
-          "Cloud data already exists for this Google account.\n\n" +
-          "OK = use the cloud data on this device.\n" +
-          "Cancel = keep this device's data and replace the cloud copy with it.\n\n" +
-          "Export a local backup first if both copies contain important changes."
+        clearLegacyLocalData();
+      } else if (localHasData) {
+        const migrate = confirm(
+          "This Firebase account has no ledger data yet, but this device has an older local copy.\n\n" +
+          "OK = securely upload that existing copy to this Firebase account.\n" +
+          "Cancel = start with an empty cloud ledger.\n\n" +
+          "The browser copy will be removed after the cloud copy is confirmed saved."
         );
 
-        if (useCloud) {
-          state = cloudState;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          rerenderAll();
-          setCloudStatus("Cloud loaded", "connected");
-        } else {
+        if (migrate) {
+          state = normalizeState(legacyLocalState);
           await saveCloudState(user.uid, state);
-          setCloudStatus("Local copied to cloud", "connected");
+          clearLegacyLocalData();
+        } else {
+          state = createEmptyState();
+          clearLegacyLocalData();
         }
+      } else {
+        state = createEmptyState();
+        clearLegacyLocalData();
+        await saveCloudState(user.uid, state);
       }
+
+      rerenderAll();
+      hideAuthGate();
+      setCloudStatus("Cloud saved", "connected");
+
+      const hasPasswordProvider = user.providerData?.some(
+        provider => provider.providerId === "password"
+      );
+
+      if (!hasPasswordProvider) {
+        $("setupEmail").textContent = user.email || "";
+        $("passwordSetupCard").classList.remove("hidden");
+      }
+
+      showAuthMessage("", "success");
     } catch (error) {
       console.error("Firebase load error:", error);
       setCloudStatus("Cloud connection error", "error");
-      showToast("Could not load cloud data. Your local copy remains available.");
+      setAuthGate("Could not safely load the Firebase ledger. Your cloud data was not replaced.", "error");
+
+      try {
+        await signOutGoogle();
+      } catch (_) {}
     } finally {
       suppressCloudSync = false;
     }
   });
-
 }
-
 
 
 function closeProfileModal(id) {
@@ -2263,7 +2432,6 @@ $("deleteOldRecordsConfirmBtn").addEventListener("click", async () => {
 
   try {
     const result = deleteOldRecordsFromState(months);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     rerenderAll();
     $("retentionModal").classList.add("hidden");
 
@@ -2300,10 +2468,8 @@ $("resetDataBtn").addEventListener("click", async () => {
     return;
   }
 
-  state.customers = [];
-  state.suppliers = [];
-  state.labours = [];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  state = createEmptyState();
+  clearLegacyLocalData();
   rerenderAll();
 
   if (currentFirebaseUser && isFirebaseConfigured()) {
@@ -2358,8 +2524,12 @@ $("importDataInput").addEventListener("change", async (e) => {
     state.customers = imported.customers;
     state.suppliers = imported.suppliers;
     state.labours = imported.labours;
+    state = normalizeState(state);
     save();
-    location.reload();
+    await flushCloudSave();
+    rerenderAll();
+    showAuthMessage("Backup imported and saved to Firebase.", "success");
+    showToast("Backup imported and securely saved to cloud.");
   } catch (error) {
     showToast("Invalid backup file.");
   } finally {
