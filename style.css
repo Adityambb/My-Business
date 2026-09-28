@@ -3007,3 +3007,28 @@ button.reset-quiet:active {
     padding-right: 86px !important;
   }
 }
+
+
+/* Keep the app's navigation reachable even when a modal is open. */
+.modal {
+  z-index: 1500 !important;
+}
+
+.sidebar {
+  z-index: 2000;
+}
+
+.mobile-overlay {
+  z-index: 1990;
+}
+
+@media (max-width: 780px) {
+  .mobile-menu-btn {
+    position: relative;
+    z-index: 2001;
+  }
+
+  .sidebar.mobile-open {
+    z-index: 2000;
+  }
+}
