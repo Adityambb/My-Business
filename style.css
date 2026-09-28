@@ -2893,3 +2893,64 @@ button.reset-quiet:active {
     font-size: 21px;
   }
 }
+
+
+/* Authentication mode switch */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid #e1e6ef;
+  border-radius: 11px;
+  background: #f5f7fb;
+}
+
+.auth-tab {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 7px rgba(17, 24, 39, .08);
+}
+
+.auth-small-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.auth-setup-note > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #1f2937;
+  font-size: 11px;
+}
+
+.password-setup-card {
+  margin-top: 0;
+}
+
+@media (max-width: 560px) and (pointer: coarse) {
+  .auth-tab {
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  .auth-small-note {
+    font-size: 11px;
+  }
+}
