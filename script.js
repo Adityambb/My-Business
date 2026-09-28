@@ -166,11 +166,72 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
+function resetUnsavedFormForView(view) {
+  const formMap = {
+    customers: "customerForm",
+    purchases: "purchaseForm",
+    payment: "paymentForm",
+    suppliers: "supplierForm",
+    supplierPurchase: "supplierPurchaseForm",
+    supplierPayment: "supplierPaymentForm",
+    labours: "labourForm",
+    labourWork: "labourWorkForm",
+    labourPayment: "labourPaymentForm"
+  };
+
+  const formId = formMap[view];
+  const form = formId ? $(formId) : null;
+  if (!form) return;
+
+  form.reset();
+
+  // Restore the default dates/values used by the entry forms.
+  const dateDefaults = {
+    purchaseForm: "purchaseDate",
+    paymentForm: "paymentDate",
+    supplierPurchaseForm: "supplierPurchaseDate",
+    supplierPaymentForm: "supplierPaymentDate",
+    labourWorkForm: "labourWorkDate",
+    labourPaymentForm: "labourPaymentDate"
+  };
+
+  const dateId = dateDefaults[formId];
+  if (dateId) $(dateId).value = today();
+
+  if (formId === "purchaseForm") {
+    $("purchaseUnit").value = "foot";
+    updatePurchaseAmount();
+  }
+
+  if (formId === "supplierPurchaseForm") {
+    $("supplierPurchaseUnit").value = "kg";
+    $("supplierPurchasePaid").value = "0";
+    updateSupplierPurchaseAmount();
+  }
+
+  if (formId === "labourWorkForm") {
+    $("labourRegularHours").value = "9";
+    $("labourDailyWage").value = "500";
+    $("labourOvertimeHours").value = "0";
+    $("labourOvertimeRate").value = "50";
+    $("labourUnloadCharge").value = "0";
+    $("labourWorkNote").value = "";
+    updateLabourPreview();
+  }
+}
+
 function setView(view, options = {}) {
   const target = $(view);
   if (!target) return;
 
   const fromHistory = Boolean(options.fromHistory);
+  const currentView = document.querySelector(".view.active")?.id;
+
+  // Unsaved form fields are only UI input. They are intentionally discarded
+  // when navigating away, and never copied into state/localStorage/Firebase.
+  if (currentView && currentView !== view) {
+    resetUnsavedFormForView(currentView);
+  }
 
   if (!fromHistory) {
     const current = window.history.state;
