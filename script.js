@@ -8,7 +8,7 @@ import {
   signOutGoogle,
   loadCloudState,
   saveCloudState
-} from "./firebase.js";
+} from "./firebase.js?v=20260928-1245";
 
 const STORAGE_KEY = "ledgerpro_data_v1";
 
