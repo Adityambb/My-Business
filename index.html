@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rajendra Shaw & Son</title>
-  <link rel="stylesheet" href="style.css?v=20260928-1245" />
+  <link rel="stylesheet" href="style.css?v=20260928-1300" />
 </head>
 <body>
   <div id="authGate" class="auth-gate">
@@ -19,34 +19,67 @@
 
       <div class="auth-heading">
         <p class="eyebrow">SECURE ACCESS</p>
-        <h2>Unlock your business ledger</h2>
-        <p>Your data is stored in Firebase Cloud. Enter your email and password to access it.</p>
+        <h2>Business Ledger</h2>
+        <p>Sign in with your Firebase email and password. Each email has its own separate ledger.</p>
       </div>
 
-      <form id="appLoginForm" class="auth-form">
-        <label>Email address
-          <input id="loginEmail" type="email" autocomplete="username" placeholder="your@email.com" required />
-        </label>
+      <div class="auth-tabs">
+        <button id="showSigninBtn" class="auth-tab active" type="button">Sign In</button>
+        <button id="showSignupBtn" class="auth-tab" type="button">Sign Up</button>
+      </div>
 
-        <label>Password
-          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required />
-        </label>
+      <div id="signinCard">
+        <form id="appLoginForm" class="auth-form">
+          <label>Email address
+            <input id="loginEmail" type="email" autocomplete="username" placeholder="your@email.com" required />
+          </label>
 
-        <button id="loginSubmitBtn" class="primary full" type="submit">Sign in securely</button>
-      </form>
+          <label>Password
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required />
+          </label>
 
-      <button id="forgotPasswordBtn" class="auth-link" type="button">Forgot password?</button>
+          <button id="loginSubmitBtn" class="primary full" type="submit">Sign in securely</button>
+        </form>
 
-      <div class="auth-divider"><span>First-time password setup</span></div>
+        <button id="forgotPasswordBtn" class="auth-link" type="button">Forgot password?</button>
 
-      <div class="auth-setup-note">
-        <p>Already using Google for this MyBills account? Use Google once to add an email + password to the same Firebase account. Your existing cloud data stays connected to the same account.</p>
-        <button id="googleSetupBtn" class="secondary full" type="button">One-time setup with Google</button>
+        <div class="auth-divider"><span>Existing owner account</span></div>
+
+        <div class="auth-setup-note">
+          <strong>Primary owner: 098adityakumar@gmail.com</strong>
+          <p>For your existing Google-based ledger, verify that Google account once and create an email + password for the same Firebase account. Your existing business data stays attached to that account.</p>
+          <button id="googleSetupBtn" class="secondary full" type="button">One-time owner setup with Google</button>
+        </div>
+      </div>
+
+      <div id="signupCard" class="hidden">
+        <form id="appSignupForm" class="auth-form">
+          <label>Your name
+            <input id="signupName" type="text" autocomplete="name" placeholder="Full name" required />
+          </label>
+
+          <label>Email address
+            <input id="signupEmail" type="email" autocomplete="email" placeholder="your@email.com" required />
+          </label>
+
+          <label>Password
+            <input id="signupPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required />
+          </label>
+
+          <label>Confirm password
+            <input id="signupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" placeholder="Re-enter password" required />
+          </label>
+
+          <button id="signupSubmitBtn" class="primary full" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-small-note">New accounts start with a completely separate ledger at ₹0 / 0 records. Their data is stored under their own Firebase account.</p>
       </div>
 
       <div id="passwordSetupCard" class="password-setup-card hidden">
         <div>
-          <h3>Create your ledger password</h3>
+          <p class="eyebrow">OWNER VERIFICATION COMPLETE</p>
+          <h3>Create your primary ledger password</h3>
           <p>Email: <strong id="setupEmail"></strong></p>
         </div>
 
@@ -826,6 +859,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script type="module" src="script.js?v=20260928-1245"></script>
+  <script type="module" src="script.js?v=20260928-1300"></script>
 </body>
 </html>
