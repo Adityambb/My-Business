@@ -3,6 +3,7 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   sendPasswordResetEmail,
   onAuthStateChanged,
   inMemoryPersistence,
@@ -86,10 +87,7 @@ export async function signUpEmailPassword(name, email, password) {
   );
 
   // Store the user's name in Firebase Authentication profile.
-  await (async () => {
-    const { updateProfile } = await import("https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js");
-    await updateProfile(result.user, { displayName: name.trim() });
-  })();
+  await updateProfile(result.user, { displayName: name.trim() });
 
   return result.user;
 }
