@@ -1553,6 +1553,8 @@ window.openCustomer = function(id, options = {}) {
   }
 
   const t = totals(customer);
+  const todayPurchases = customer.purchases.filter(p => p.date === today());
+  const todayBillTotal = todayPurchases.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   const purchases = customer.purchases
     .map(p => `
@@ -1586,11 +1588,27 @@ window.openCustomer = function(id, options = {}) {
 
   $("detailContent").innerHTML = `
     <div class="detail-header bill-detail-header">
-      <div>
-      <h2>${escapeHtml(customer.name)}</h2>
-      <p>${escapeHtml(customer.phone || "No phone")} ${customer.address ? " · " + escapeHtml(customer.address) : ""}</p>
+      <div class="bill-customer-heading">
+        <h2>${escapeHtml(customer.name)}</h2>
+        <p>${escapeHtml(customer.phone || "No phone")} ${customer.address ? " · " + escapeHtml(customer.address) : ""}</p>
       </div>
       <button class="primary bill-generate-btn" type="button" onclick="generateBill()">Generate Bill</button>
+    </div>
+
+    <div class="quick-billing-card">
+      <div class="quick-billing-main">
+        <div class="quick-billing-icon">▤</div>
+        <div>
+          <div class="quick-billing-eyebrow">QUICK BILLING</div>
+          <h3>Customer bill center</h3>
+          <p>${todayPurchases.length ? todayPurchases.length + " purchase" + (todayPurchases.length === 1 ? "" : "s") + " saved today · " + money(todayBillTotal) : "No purchases saved for today yet."}</p>
+        </div>
+      </div>
+      <div class="quick-billing-meta">
+        <span>PRINT</span>
+        <span>PDF</span>
+        <span>SHARE</span>
+      </div>
     </div>
 
     <div class="detail-summary">
