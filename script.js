@@ -233,6 +233,10 @@ function setView(view, options = {}) {
   const target = $(view);
   if (!target) return;
 
+  // A modal must never trap the single-page app's navigation.
+  const retentionModal = $("retentionModal");
+  if (retentionModal) retentionModal.classList.add("hidden");
+
   const fromHistory = Boolean(options.fromHistory);
   const currentView = document.querySelector(".view.active")?.id;
 
@@ -2213,6 +2217,9 @@ if (!window.history.state || !window.history.state.view) {
 }
 
 window.addEventListener("popstate", async (event) => {
+  const retentionModal = $("retentionModal");
+  if (retentionModal) retentionModal.classList.add("hidden");
+
   // LocalStorage is already current because save() writes synchronously.
   // Finish any pending Firebase write before displaying the previous page.
   await flushCloudSave();
@@ -2247,6 +2254,9 @@ function closeMobileMenu() {
 }
 
 mobileMenuBtn.addEventListener("click", () => {
+  const retentionModal = $("retentionModal");
+  if (retentionModal) retentionModal.classList.add("hidden");
+
   document.querySelector(".sidebar").classList.toggle("mobile-open");
   mobileOverlay.classList.toggle("show");
 });
