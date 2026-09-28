@@ -40,6 +40,7 @@ function createEmptyState() {
 const $ = (id) => document.getElementById(id);
 
 let currentFirebaseUser = null;
+let currentDetailCustomerId = null;
 let cloudSyncTimer = null;
 let cloudSyncInProgress = false;
 let cloudSavePromise = null;
@@ -1541,6 +1542,8 @@ window.openCustomer = function(id, options = {}) {
   const customer = customerById(id);
   if (!customer) return;
 
+  currentDetailCustomerId = id;
+
   if (!options.fromHistory) {
     window.history.pushState(
       { view: "customerDetail", entityType: "customer", entityId: id },
@@ -1582,9 +1585,12 @@ window.openCustomer = function(id, options = {}) {
     `).join("");
 
   $("detailContent").innerHTML = `
-    <div class="detail-header">
+    <div class="detail-header bill-detail-header">
+      <div>
       <h2>${escapeHtml(customer.name)}</h2>
       <p>${escapeHtml(customer.phone || "No phone")} ${customer.address ? " · " + escapeHtml(customer.address) : ""}</p>
+      </div>
+      <button class="primary bill-generate-btn" type="button" onclick="generateBill()">Generate Bill</button>
     </div>
 
     <div class="detail-summary">
@@ -1768,7 +1774,7 @@ function openBillModal(customerId = "") {
 }
 
 window.generateBill = function(customerId = "") {
-  openBillModal(customerId);
+  openBillModal(customerId || currentDetailCustomerId || "");
 };
 
 function closeBillModal() {
