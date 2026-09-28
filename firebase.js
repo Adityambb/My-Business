@@ -1,15 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  EmailAuthProvider,
-  signInWithPopup,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
   createUserWithEmailAndPassword,
-  updateProfile,
-  linkWithCredential,
-  unlink,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   inMemoryPersistence,
   setPersistence,
@@ -42,8 +36,7 @@ if (configured) {
   auth = getAuth(app);
   db = getFirestore(app);
 
-  // Keep authentication only in memory. A full page reload clears the
-  // session, so the private ledger asks for credentials again.
+  // Keep authentication only in memory. Reloading the page locks the ledger.
   persistenceReady = setPersistence(auth, inMemoryPersistence).catch((error) => {
     console.error("Firebase persistence setup failed:", error);
     throw error;
@@ -61,20 +54,6 @@ export function isFirebaseConfigured() {
 export function onUserChanged(callback) {
   if (!configured) return () => {};
   return onAuthStateChanged(auth, callback);
-}
-
-export async function signInGoogle() {
-  if (!configured) {
-    throw new Error("Firebase is not configured yet.");
-  }
-
-  await persistenceReady;
-
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
 }
 
 export async function signInEmailPassword(email, password) {
@@ -106,9 +85,11 @@ export async function signUpEmailPassword(name, email, password) {
     password
   );
 
-  await updateProfile(result.user, {
-    displayName: name.trim()
-  });
+  // Store the user's name in Firebase Authentication profile.
+  await (async () => {
+    const { updateProfile } = await import("https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js");
+    await updateProfile(result.user, { displayName: name.trim() });
+  })();
 
   return result.user;
 }
@@ -119,31 +100,6 @@ export async function resetEmailPassword(email) {
   }
 
   await sendPasswordResetEmail(auth, email.trim());
-}
-
-export async function linkCurrentUserWithPassword(email, password) {
-  if (!configured || !auth?.currentUser) {
-    throw new Error("No signed-in user is available for password setup.");
-  }
-
-  const credential = EmailAuthProvider.credential(email.trim(), password);
-  const result = await linkWithCredential(auth.currentUser, credential);
-  return result.user;
-}
-
-export async function unlinkGoogleFromCurrentUser() {
-  if (!configured || !auth?.currentUser) {
-    throw new Error("No signed-in user is available.");
-  }
-
-  const provider = auth.currentUser.providerData.find(
-    item => item.providerId === "google.com"
-  );
-
-  if (!provider) return auth.currentUser;
-
-  const result = await unlink(auth.currentUser, "google.com");
-  return result;
 }
 
 export async function signOutGoogle() {
