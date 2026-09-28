@@ -1885,86 +1885,80 @@ async function initializeFirebaseConnection() {
     showAuthMessage("Create a new account. New users start with a fresh ledger.");
   }
 
-  if (showSignupBtn) showSignupBtn.addEventListener("click", showSignupMode);
-  if (showSigninBtn) showSigninBtn.addEventListener("click", showLoginMode);
+  showSignupBtn?.addEventListener("click", showSignupMode);
+  showSigninBtn?.addEventListener("click", showLoginMode);
 
-  if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const email = $("loginEmail").value.trim();
-      const password = $("loginPassword").value;
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPassword").value;
 
-      if (!email || !password) {
-        return showAuthMessage("Enter your email and password.", "error");
-      }
+    if (!email || !password) {
+      return showAuthMessage("Enter your email and password.", "error");
+    }
 
-      const button = $("loginSubmitBtn");
-      button.disabled = true;
-      button.textContent = "Signing in…";
-      showAuthMessage("Checking your credentials…");
+    const button = $("loginSubmitBtn");
+    button.disabled = true;
+    button.textContent = "Signing in…";
+    showAuthMessage("Checking your credentials…");
 
-      try {
-        await signInEmailPassword(email, password);
-      } catch (error) {
-        console.error("Email/password sign-in error:", error);
-        showAuthMessage(authErrorMessage(error), "error");
-        button.disabled = false;
-        button.textContent = "Sign in securely";
-      }
-    });
-  }
+    try {
+      await signInEmailPassword(email, password);
+    } catch (error) {
+      console.error("Email/password sign-in error:", error);
+      showAuthMessage(authErrorMessage(error), "error");
+      button.disabled = false;
+      button.textContent = "Sign in securely";
+    }
+  });
 
-  if (signupForm) {
-    signupForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  signupForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const name = $("signupName").value.trim();
-      const email = $("signupEmail").value.trim();
-      const password = $("signupPassword").value;
-      const confirmPassword = $("signupPasswordConfirm").value;
+    const name = $("signupName").value.trim();
+    const email = $("signupEmail").value.trim();
+    const password = $("signupPassword").value;
+    const confirmPassword = $("signupPasswordConfirm").value;
 
-      if (!name) return showAuthMessage("Enter your name.", "error");
-      if (!email || !password) return showAuthMessage("Enter your email and password.", "error");
-      if (password.length < 8) return showAuthMessage("Use a password of at least 8 characters.", "error");
-      if (password !== confirmPassword) return showAuthMessage("Passwords do not match.", "error");
+    if (!name) return showAuthMessage("Enter your name.", "error");
+    if (!email || !password) return showAuthMessage("Enter your email and password.", "error");
+    if (password.length < 8) return showAuthMessage("Use a password of at least 8 characters.", "error");
+    if (password !== confirmPassword) return showAuthMessage("Passwords do not match.", "error");
 
-      const button = $("signupSubmitBtn");
-      button.disabled = true;
-      button.textContent = "Creating account…";
-      showAuthMessage("Creating your secure account…");
+    const button = $("signupSubmitBtn");
+    button.disabled = true;
+    button.textContent = "Creating account…";
+    showAuthMessage("Creating your secure account…");
 
-      try {
-        await signUpEmailPassword(name, email, password);
-      } catch (error) {
-        console.error("Email/password sign-up error:", error);
-        showAuthMessage(authErrorMessage(error), "error");
-        button.disabled = false;
-        button.textContent = "Create account";
-      }
-    });
-  }
+    try {
+      await signUpEmailPassword(name, email, password);
+    } catch (error) {
+      console.error("Email/password sign-up error:", error);
+      showAuthMessage(authErrorMessage(error), "error");
+      button.disabled = false;
+      button.textContent = "Create account";
+    }
+  });
 
-  if (forgotPasswordBtn) {
-    forgotPasswordBtn.addEventListener("click", async () => {
-      const email = $("loginEmail").value.trim();
+  forgotPasswordBtn?.addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
 
-      if (!email) {
-        return showAuthMessage("Enter your email first, then tap Forgot password.", "error");
-      }
+    if (!email) {
+      return showAuthMessage("Enter your email first, then tap Forgot password.", "error");
+    }
 
-      try {
-        forgotPasswordBtn.disabled = true;
-        await resetEmailPassword(email);
-        showAuthMessage("Password reset email sent. Check your inbox.", "success");
-      } catch (error) {
-        console.error("Password reset error:", error);
-        showAuthMessage(authErrorMessage(error), "error");
-      } finally {
-        forgotPasswordBtn.disabled = false;
-      }
-    });
-  }
+    try {
+      forgotPasswordBtn.disabled = true;
+      await resetEmailPassword(email);
+      showAuthMessage("Password reset email sent. Check your inbox.", "success");
+    } catch (error) {
+      console.error("Password reset error:", error);
+      showAuthMessage(authErrorMessage(error), "error");
+    } finally {
+      forgotPasswordBtn.disabled = false;
+    }
+  });
 
   $("cloudLogoutBtn").addEventListener("click", async () => {
     try {
@@ -2009,7 +2003,8 @@ async function initializeFirebaseConnection() {
     setCloudStatus("Connecting…");
 
     try {
-      // Firebase is the authoritative source for every user's ledger.
+      // Firebase is the sole authoritative source. Every account maps to its
+      // own UID, so each email gets a separate ledger.
       const cloudRaw = await loadCloudState(user.uid);
       const cloudState = cloudRaw ? normalizeState(cloudRaw) : null;
 
@@ -2018,13 +2013,12 @@ async function initializeFirebaseConnection() {
       if (cloudState) {
         state = cloudState;
       } else {
-        // First login for this email: start this user's ledger at zero.
         state = createEmptyState();
         await saveCloudState(user.uid, state);
       }
 
-      // Remove any legacy business data from the browser. It is never used
-      // as an authority for the ledger.
+      // Remove any old pre-Firebase browser ledger after Firebase has been
+      // loaded/initialized. It is never used to populate another account.
       clearLegacyLocalData();
 
       rerenderAll();
