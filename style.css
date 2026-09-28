@@ -2954,3 +2954,56 @@ button.reset-quiet:active {
     font-size: 11px;
   }
 }
+
+
+/* Password field visibility controls */
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  padding-right: 78px !important;
+  margin-top: 0 !important;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 58px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid #d7deea;
+  border-radius: 7px;
+  background: #f7f9fd;
+  color: var(--primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  background: #eef3ff;
+  border-color: #bcc9e7;
+}
+
+.password-toggle:active {
+  transform: translateY(-50%);
+}
+
+@media (max-width: 560px) and (pointer: coarse) {
+  .password-toggle {
+    min-width: 64px;
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .password-field input {
+    padding-right: 86px !important;
+  }
+}
