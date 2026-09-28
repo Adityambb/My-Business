@@ -4,9 +4,70 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rajendra Shaw & Son</title>
-  <link rel="stylesheet" href="style.css?v=20260928-0155" />
+  <link rel="stylesheet" href="style.css?v=20260928-1235" />
 </head>
 <body>
+  <div id="authGate" class="auth-gate">
+    <div class="auth-panel">
+      <div class="auth-brand">
+        <div class="auth-mark">₹</div>
+        <div>
+          <strong>MyBills</strong>
+          <span>Private Business Ledger</span>
+        </div>
+      </div>
+
+      <div class="auth-heading">
+        <p class="eyebrow">SECURE ACCESS</p>
+        <h2>Unlock your business ledger</h2>
+        <p>Your data is stored in Firebase Cloud. Enter your email and password to access it.</p>
+      </div>
+
+      <form id="appLoginForm" class="auth-form">
+        <label>Email address
+          <input id="loginEmail" type="email" autocomplete="username" placeholder="your@email.com" required />
+        </label>
+
+        <label>Password
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required />
+        </label>
+
+        <button id="loginSubmitBtn" class="primary full" type="submit">Sign in securely</button>
+      </form>
+
+      <button id="forgotPasswordBtn" class="auth-link" type="button">Forgot password?</button>
+
+      <div class="auth-divider"><span>First-time password setup</span></div>
+
+      <div class="auth-setup-note">
+        <p>Already using Google for this MyBills account? Use Google once to add an email + password to the same Firebase account. Your existing cloud data stays connected to the same account.</p>
+        <button id="googleSetupBtn" class="secondary full" type="button">One-time setup with Google</button>
+      </div>
+
+      <div id="passwordSetupCard" class="password-setup-card hidden">
+        <div>
+          <h3>Create your ledger password</h3>
+          <p>Email: <strong id="setupEmail"></strong></p>
+        </div>
+
+        <form id="passwordSetupForm" class="auth-form">
+          <label>New password
+            <input id="setupPassword" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+
+          <label>Confirm password
+            <input id="setupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+
+          <button id="setupPasswordBtn" class="primary full" type="submit">Set secure password</button>
+          <button id="cancelPasswordSetupBtn" class="secondary full" type="button">Cancel</button>
+        </form>
+      </div>
+
+      <p id="authMessage" class="auth-message">Your business ledger is locked.</p>
+    </div>
+  </div>
+
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">₹</div>
@@ -765,6 +826,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script type="module" src="script.js?v=20260928-1225"></script>
+  <script type="module" src="script.js?v=20260928-1235"></script>
 </body>
 </html>
