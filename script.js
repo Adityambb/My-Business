@@ -1879,17 +1879,27 @@ async function initializeFirebaseConnection() {
   function showLoginMode() {
     $("signinCard").classList.remove("hidden");
     $("signupCard").classList.add("hidden");
-    showSignupBtn.classList.add("hidden");
-    showSigninBtn.classList.remove("hidden");
+    $("passwordSetupCard").classList.add("hidden");
+    showSigninBtn.classList.add("active");
+    showSignupBtn.classList.remove("active");
     showAuthMessage("Sign in to your existing MyBills account.");
   }
 
   function showSignupMode() {
     $("signinCard").classList.add("hidden");
     $("signupCard").classList.remove("hidden");
-    showSignupBtn.classList.remove("hidden");
-    showSigninBtn.classList.add("hidden");
+    $("passwordSetupCard").classList.add("hidden");
+    showSigninBtn.classList.remove("active");
+    showSignupBtn.classList.add("active");
     showAuthMessage("Create a new Firebase account. New users start with a fresh ledger.");
+  }
+
+  function showOwnerSetupMode() {
+    $("signinCard").classList.add("hidden");
+    $("signupCard").classList.add("hidden");
+    $("passwordSetupCard").classList.remove("hidden");
+    showSigninBtn.classList.add("active");
+    showSignupBtn.classList.remove("active");
   }
 
   if (showSignupBtn) showSignupBtn.addEventListener("click", showSignupMode);
@@ -1933,6 +1943,12 @@ async function initializeFirebaseConnection() {
 
       if (!name) return showAuthMessage("Enter your name.", "error");
       if (!email || !password) return showAuthMessage("Enter your email and password.", "error");
+      if (email.toLowerCase() === PRIMARY_EMAIL) {
+        return showAuthMessage(
+          "This is the primary owner email. Use One-time owner setup with Google to create its password and keep your existing ledger.",
+          "error"
+        );
+      }
       if (password.length < 8) return showAuthMessage("Use a password of at least 8 characters.", "error");
       if (password !== confirmPassword) return showAuthMessage("Passwords do not match.", "error");
 
@@ -2157,7 +2173,7 @@ async function initializeFirebaseConnection() {
 
       if (signedInWithGoogle && isPrimaryAccount && !hasPasswordProvider) {
         $("setupEmail").textContent = user.email || "";
-        $("passwordSetupCard").classList.remove("hidden");
+        showOwnerSetupMode();
         setAuthGate(
           "Owner verification complete. Create the password for your existing primary account."
         );
