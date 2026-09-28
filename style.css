@@ -3487,3 +3487,93 @@ button.reset-quiet:active {
     width: 100%;
   }
 }
+
+
+/* Bill modal final polish */
+.bill-modal-box {
+  width: min(820px, calc(100vw - 40px));
+  max-height: min(92vh, 900px);
+  padding: 24px 26px;
+  border-radius: 16px;
+}
+
+.bill-modal-head {
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.bill-modal-head h2 {
+  margin-top: 2px;
+  font-size: 21px;
+}
+
+.bill-controls {
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, .8fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.bill-controls label {
+  line-height: 1.2;
+}
+
+.bill-controls input,
+.bill-controls select {
+  min-height: 46px;
+  margin-top: 0;
+}
+
+.bill-preview {
+  min-height: 250px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fafbfd;
+}
+
+.bill-empty-state {
+  min-height: 210px;
+}
+
+.bill-actions {
+  margin-top: 18px;
+  gap: 10px;
+}
+
+.bill-actions button {
+  min-width: 155px;
+  min-height: 44px;
+}
+
+@media (max-width: 700px) and (pointer: coarse) {
+  .bill-modal-box {
+    width: min(100%, 680px);
+    max-height: 94vh;
+    padding: 18px 14px !important;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .bill-controls {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .bill-preview {
+    min-height: 220px;
+    padding: 12px;
+  }
+
+  .bill-actions {
+    margin-top: 14px;
+  }
+
+  .bill-actions button {
+    width: 100%;
+    min-height: 50px;
+  }
+}
+
+@media (min-width: 701px) {
+  .bill-modal-box {
+    scrollbar-gutter: stable;
+  }
+}
