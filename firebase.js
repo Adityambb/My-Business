@@ -6,7 +6,10 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  createUserWithEmailAndPassword,
+  updateProfile,
   linkWithCredential,
+  unlink,
   onAuthStateChanged,
   inMemoryPersistence,
   setPersistence,
@@ -90,6 +93,26 @@ export async function signInEmailPassword(email, password) {
   return result.user;
 }
 
+export async function signUpEmailPassword(name, email, password) {
+  if (!configured) {
+    throw new Error("Firebase is not configured yet.");
+  }
+
+  await persistenceReady;
+
+  const result = await createUserWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
+
+  await updateProfile(result.user, {
+    displayName: name.trim()
+  });
+
+  return result.user;
+}
+
 export async function resetEmailPassword(email) {
   if (!configured) {
     throw new Error("Firebase is not configured yet.");
@@ -106,6 +129,21 @@ export async function linkCurrentUserWithPassword(email, password) {
   const credential = EmailAuthProvider.credential(email.trim(), password);
   const result = await linkWithCredential(auth.currentUser, credential);
   return result.user;
+}
+
+export async function unlinkGoogleFromCurrentUser() {
+  if (!configured || !auth?.currentUser) {
+    throw new Error("No signed-in user is available.");
+  }
+
+  const provider = auth.currentUser.providerData.find(
+    item => item.providerId === "google.com"
+  );
+
+  if (!provider) return auth.currentUser;
+
+  const result = await unlink(auth.currentUser, "google.com");
+  return result;
 }
 
 export async function signOutGoogle() {
