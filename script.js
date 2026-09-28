@@ -1959,9 +1959,12 @@ async function initializeFirebaseConnection() {
       button.textContent = "Saving password…";
 
       try {
-        await linkCurrentUserWithPassword(currentFirebaseUser.email, password);
+        const linkedUser = await linkCurrentUserWithPassword(currentFirebaseUser.email, password);
+        currentFirebaseUser = linkedUser;
         $("passwordSetupCard").classList.add("hidden");
-        showAuthMessage("Password setup complete. You can now use email + password to unlock this ledger.", "success");
+        hideAuthGate();
+        showAuthMessage("", "success");
+        showToast("Secure password created. The ledger is now unlocked.");
       } catch (error) {
         console.error("Password linking error:", error);
         showAuthMessage(authErrorMessage(error), "error");
@@ -2003,7 +2006,6 @@ async function initializeFirebaseConnection() {
       clearTimeout(cloudSyncTimer);
       cloudSaveRequested = false;
       state = createEmptyState();
-      clearLegacyLocalData();
 
       $("cloudUser").textContent = "";
       $("cloudLoginBtn").classList.add("hidden");
@@ -2059,7 +2061,6 @@ async function initializeFirebaseConnection() {
       }
 
       rerenderAll();
-      hideAuthGate();
       setCloudStatus("Cloud saved", "connected");
 
       const hasPasswordProvider = user.providerData?.some(
@@ -2069,9 +2070,14 @@ async function initializeFirebaseConnection() {
       if (!hasPasswordProvider) {
         $("setupEmail").textContent = user.email || "";
         $("passwordSetupCard").classList.remove("hidden");
+        setAuthGate(
+          "One-time setup: create an email + password for this existing MyBills account. Your current cloud data stays on the same Firebase account."
+        );
+        showAuthMessage("Set the password below. The ledger stays locked until it is created.", "success");
+      } else {
+        hideAuthGate();
+        showAuthMessage("", "success");
       }
-
-      showAuthMessage("", "success");
     } catch (error) {
       console.error("Firebase load error:", error);
       setCloudStatus("Cloud connection error", "error");
